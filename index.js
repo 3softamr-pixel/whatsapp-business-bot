@@ -30,7 +30,7 @@ const puppeteerConfig = {
         '--single-process',
         '--disable-gpu'
     ],
-    executablePath: process.env.CHROME_BIN || '/usr/bin/chromium-browser'
+   
 };
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -2369,6 +2369,7 @@ server.listen(PORT, '0.0.0.0', () => {
     initializeBot();
 
 });
+
 
 
 
