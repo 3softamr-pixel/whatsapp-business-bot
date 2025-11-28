@@ -17,7 +17,21 @@ const sessionsDir = path.join(dataDir, 'sessions');
 const repliesFile = path.join(dataDir, 'replies.json');
 const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
-
+// ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
+const puppeteerConfig = {
+    headless: true,
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--remote-debugging-port=9222'
+    ]
+};
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir);
@@ -2288,10 +2302,7 @@ app.get('/', (req, res) => {
 function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
-        puppeteerOptions: {
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        },
+        puppeteerOptions: puppeteerConfig,
         catchQR: (base64Qr) => {
             console.log('✅ QR Code جاهز');
             botState.qrCode = base64Qr;
