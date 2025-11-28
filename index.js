@@ -2300,14 +2300,21 @@ app.get('/', (req, res) => {
 
 // تشغيل البوت مع إدارة الجلسات
 // إصلاح إضافي لمسار Chrome
-process.env.PUPPETEER_EXECUTABLE_PATH = '/opt/render/.cache/puppeteer/chrome/linux-142.0.7444.175/chrome-linux64/chrome';
 function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
         puppeteerOptions: puppeteerConfig,
-        catchQR: (base64Qr) => {
-            console.log('✅ QR Code جاهز');
+        catchQR: (base64Qr, asciiQR) => {
+            console.log('✅ QR Code جاهز للربط!');
+            console.log('📱 امسح هذا الـ QR Code بواسطة واتساب:');
+            console.log(asciiQR);
+    
+    // حفظ QR Code للعرض في الواجهة
             botState.qrCode = base64Qr;
+            botState.asciiQR = asciiQR;
+    
+    // يمكنك أيضاً حفظه في ملف إذا أردت
+            fs.writeFileSync('/tmp/qr-code.txt', asciiQR);
         }
     })
     .then(client => {
