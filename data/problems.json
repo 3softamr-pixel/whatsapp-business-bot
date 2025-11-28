@@ -1,0 +1,59 @@
+[
+  {
+    "id": "e1f8-704e-f05d-c375",
+    "userId": "967775513338@c.us",
+    "userName": "المهندس عمرو المضرحي - إبداع سوفت",
+    "problem": "لدي مشكلة في نظام الدوت_اكس_برو الذهبي ولم يقم اي شخص حلها",
+    "category": "مشكلة فنية",
+    "status": "resolved",
+    "timestamp": "2025-11-28T01:03:51.212Z",
+    "messages": [
+      {
+        "message": "متى ظهرت هذه المشكلة",
+        "fromUser": false,
+        "timestamp": "2025-11-28T01:17:36.886Z"
+      },
+      {
+        "message": "تم الحل",
+        "fromUser": false,
+        "timestamp": "2025-11-28T14:01:46.146Z"
+      }
+    ]
+  },
+  {
+    "id": "77a9-8688-0be0-aca8",
+    "userId": "967775513338@c.us",
+    "userName": "المهندس عمرو المضرحي - إبداع سوفت",
+    "problem": "e1f8-704#",
+    "category": "استفسار عن خدمة",
+    "status": "new",
+    "timestamp": "2025-11-28T01:18:54.660Z",
+    "messages": [
+      {
+        "message": "لا",
+        "fromUser": false,
+        "timestamp": "2025-11-28T01:19:50.451Z"
+      },
+      {
+        "message": "بلا",
+        "fromUser": false,
+        "timestamp": "2025-11-28T01:25:42.492Z"
+      },
+      {
+        "message": "مرحبا",
+        "fromUser": false,
+        "timestamp": "2025-11-28T17:13:47.656Z"
+      }
+    ]
+  },
+  {
+    "id": "07e5-a3f9-dc48-7799",
+    "userId": "967775513338@c.us",
+    "userName": "المهندس عمرو المضرحي - إبداع سوفت",
+    "problem": "4",
+    "category": "استفسار عن خدمة",
+    "status": "new",
+    "timestamp": "2025-11-28T01:24:10.589Z",
+    "messages": []
+  }
+]

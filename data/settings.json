@@ -1,0 +1,31 @@
+{
+  "autoReply": true,
+  "themeColor": "#19319a",
+  "sessionTimeout": 30,
+  "enableImages": true,
+  "enableLinks": true,
+  "companyName": "إبداع سوفت",
+  "welcomeMessage": "مرحباً بك! 🌟 كيف يمكنني مساعدتك اليوم؟",
+  "businessHours": "9:00 ص - 5:00 م",
+  "contactNumber": "0555555555",
+  "advancedFilters": {
+    "enableContactFilter": true,
+    "replyToUnknownNumbers": true,
+    "replyToSavedContacts": true,
+    "minMessageLength": 3,
+    "excludeKeywords": [
+      "😂",
+      "❤️",
+      "😍",
+      "👍",
+      "😘",
+      "✨"
+    ],
+    "businessHours": {
+      "enabled": false,
+      "start": "09:00",
+      "end": "17:00",
+      "timezone": "Asia/Riyadh"
+    }
+  }
+}
