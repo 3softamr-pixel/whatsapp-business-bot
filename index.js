@@ -28,10 +28,9 @@ const puppeteerConfig = {
         '--no-first-run',
         '--no-zygote',
         '--single-process',
-        '--disable-gpu',
-        '--remote-debugging-port=9222'
+        '--disable-gpu'
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser'
+    executablePath: process.env.CHROME_BIN || '/usr/bin/chromium-browser'
 };
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -2370,5 +2369,6 @@ server.listen(PORT, '0.0.0.0', () => {
     initializeBot();
 
 });
+
 
 
