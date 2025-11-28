@@ -2299,6 +2299,8 @@ app.get('/', (req, res) => {
 });
 
 // تشغيل البوت مع إدارة الجلسات
+// إصلاح إضافي لمسار Chrome
+process.env.PUPPETEER_EXECUTABLE_PATH = '/opt/render/.cache/puppeteer/chrome/linux-142.0.7444.175/chrome-linux64/chrome';
 function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
@@ -2369,6 +2371,7 @@ server.listen(PORT, '0.0.0.0', () => {
     initializeBot();
 
 });
+
 
 
 
