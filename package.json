@@ -1,14 +1,15 @@
 {
-  "name": "ebs-whatsapp-bot",
+  "name": "whatsapp-business-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "WhatsApp Business Bot with multi-level menus and smart filtering",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["whatsapp", "bot", "business", "automation"],
+  "author": "3softamr-pixel",
+  "license": "MIT",
   "dependencies": {
     "@wppconnect-team/wppconnect": "^1.37.8",
     "axios": "^1.13.2",
