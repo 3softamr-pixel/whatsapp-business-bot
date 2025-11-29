@@ -47,6 +47,262 @@ function generateId() {
     );
 }
 
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+class BrowserFinder {
+    constructor() {
+        this.foundPath = null;
+    }
+
+    // الطريقة 1: البحث في المسارات الثابتة
+    searchStaticPaths() {
+        console.log('🔍 البحث في المسارات الثابتة...');
+        
+        const possiblePaths = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/usr/bin/chrome',
+            '/usr/local/bin/chromium',
+            '/snap/bin/chromium',
+            '/opt/google/chrome/chrome',
+            process.env.CHROME_PATH,
+            process.env.PUPPETEER_EXECUTABLE_PATH,
+            process.env.CHROME_BIN
+        ];
+
+        for (const path of possiblePaths) {
+            if (path && fs.existsSync(path)) {
+                console.log(`✅ وجدت في المسار الثابت: ${path}`);
+                return path;
+            }
+        }
+        return null;
+    }
+
+    // الطريقة 2: البحث باستخدام أوامر which
+    searchWithWhich() {
+        console.log('🔍 البحث باستخدام أوامر which...');
+        
+        const commands = [
+            'chromium-browser',
+            'google-chrome', 
+            'chromium',
+            'chrome',
+            'google-chrome-stable'
+        ];
+
+        for (const cmd of commands) {
+            try {
+                const path = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
+                if (path && fs.existsSync(path)) {
+                    console.log(`✅ وجدت باستخدام which: ${path}`);
+                    return path;
+                }
+            } catch (e) {
+                // تجاهل الأخطاء
+            }
+        }
+        return null;
+    }
+
+    // الطريقة 3: البحث في المجلدات
+    searchInDirectories() {
+        console.log('🔍 البحث في المجلدات...');
+        
+        const directories = [
+            '/usr/bin',
+            '/usr/local/bin',
+            '/snap/bin',
+            '/opt/google/chrome',
+            '/Applications/Google Chrome.app/Contents/MacOS',
+            process.env.HOME + '/.local/bin'
+        ];
+
+        const patterns = ['*chrome*', '*chromium*'];
+
+        for (const dir of directories) {
+            if (!fs.existsSync(dir)) continue;
+            
+            for (const pattern of patterns) {
+                try {
+                    const files = execSync(`ls ${dir}/${pattern} 2>/dev/null | head -5`).toString().trim();
+                    if (files) {
+                        const fileList = files.split('\n');
+                        for (const file of fileList) {
+                            if (fs.existsSync(file) && fs.lstatSync(file).isFile()) {
+                                console.log(`✅ وجدت في المجلد: ${file}`);
+                                return file;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // تجاهل الأخطاء
+                }
+            }
+        }
+        return null;
+    }
+
+    // الطريقة 4: فحص متغيرات البيئة
+    checkEnvironmentVariables() {
+        console.log('🔍 فحص متغيرات البيئة...');
+        
+        const envVars = [
+            'CHROME_PATH',
+            'PUPPETEER_EXECUTABLE_PATH', 
+            'CHROME_BIN',
+            'BROWSER_PATH',
+            'GOOGLE_CHROME_BIN'
+        ];
+
+        for (const envVar of envVars) {
+            const path = process.env[envVar];
+            if (path && fs.existsSync(path)) {
+                console.log(`✅ وجدت في متغير البيئة ${envVar}: ${path}`);
+                return path;
+            }
+        }
+        return null;
+    }
+
+    // الطريقة 5: البحث باستخدام find command
+    searchWithFind() {
+        console.log('🔍 البحث باستخدام find...');
+        
+        try {
+            const paths = execSync('find /usr -name "*chrome*" -type f -executable 2>/dev/null | head -10').toString().trim();
+            if (paths) {
+                const pathList = paths.split('\n');
+                for (const path of pathList) {
+                    if (path.includes('chrome') && fs.existsSync(path)) {
+                        console.log(`✅ وجدت باستخدام find: ${path}`);
+                        return path;
+                    }
+                }
+            }
+        } catch (e) {
+            // تجاهل الأخطاء
+        }
+        return null;
+    }
+
+    // الطريقة الرئيسية: جمع كل الطرق
+    findBrowser() {
+        console.log('🚀 بدء البحث الشامل عن المتصفح...\n');
+
+        const methods = [
+            { name: 'متغيرات البيئة', method: () => this.checkEnvironmentVariables() },
+            { name: 'المسارات الثابتة', method: () => this.searchStaticPaths() },
+            { name: 'أمر which', method: () => this.searchWithWhich() },
+            { name: 'المجلدات', method: () => this.searchInDirectories() },
+            { name: 'أمر find', method: () => this.searchWithFind() }
+        ];
+
+        for (const method of methods) {
+            console.log(`\n--- ${method.name} ---`);
+            const result = method.method();
+            if (result) {
+                this.foundPath = result;
+                console.log(`\n🎉 تم العثور على المتصفح باستخدام ${method.name}: ${result}`);
+                return result;
+            }
+        }
+
+        console.log('\n❌ لم أعثر على أي متصفح بعد البحث الشامل!');
+        return null;
+    }
+
+    // الحصول على معلومات النظام
+    getSystemInfo() {
+        console.log('\n📊 معلومات النظام:');
+        try {
+            console.log('نظام التشغيل:', execSync('uname -a').toString().trim());
+            console.log('المسار الحالي:', process.cwd());
+            console.log('مجلد node_modules:', fs.existsSync('./node_modules'));
+        } catch (e) {
+            console.log('لا يمكن الحصول على معلومات النظام');
+        }
+    }
+}
+
+// الطريقة 6: تشغيل المتصفح مع جميع السيناريوهات
+async function initializeBrowser() {
+    const finder = new BrowserFinder();
+    
+    // الحصول على معلومات النظام أولاً
+    finder.getSystemInfo();
+    
+    // البحث عن المتصفح
+    const browserPath = finder.findBrowser();
+    
+    // إعدادات التشغيل
+    const launchOptions = {
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-software-rasterizer'
+        ],
+        headless: true,
+        ignoreHTTPSErrors: true
+    };
+
+    // تحديد مسار المتصفح إذا وجد
+    if (browserPath) {
+        launchOptions.executablePath = browserPath;
+        console.log(`\n🚀 جاري التشغيل من: ${browserPath}`);
+    } else {
+        console.log('\n⚠️  جاري التشغيل بدون تحديد مسار (سيحاول Puppeteer البحث تلقائياً)');
+    }
+
+    // محاولة التشغيل
+    try {
+        console.log('\n🎯 محاولة تشغيل المتصفح...');
+        const browser = await puppeteer.launch(launchOptions);
+        console.log('✅ تم تشغيل المتصفح بنجاح!');
+        return browser;
+    } catch (error) {
+        console.error('❌ فشل التشغيل:', error.message);
+        
+        // المحاولة الأخيرة: إعدادات مبسطة
+        console.log('🔄 المحاولة بإعدادات مبسطة...');
+        try {
+            const browser = await puppeteer.launch({
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                headless: 'new'
+            });
+            console.log('✅ تم التشغيل بالإعدادات المبسطة!');
+            return browser;
+        } catch (finalError) {
+            console.error('💥 فشل نهائي:', finalError.message);
+            throw finalError;
+        }
+    }
+}
+
+// الاستخدام
+async function main() {
+    try {
+        const browser = await initializeBrowser();
+        // تابع مع البوت...
+        return browser;
+    } catch (error) {
+        console.error('🔥 فشل تشغيل البوت بالكامل:', error);
+        process.exit(1);
+    }
+}
+
+module.exports = { initializeBrowser, BrowserFinder };
+
 // البيانات الافتراضية
 let customReplies = {
     companyName: "شركتك",
@@ -2372,3 +2628,4 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
