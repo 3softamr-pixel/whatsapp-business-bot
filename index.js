@@ -47,7 +47,7 @@ function generateId() {
     );
 }
 
-const fs = require('fs');
+
 const { execSync } = require('child_process');
 
 class BrowserFinder {
@@ -2628,4 +2628,5 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
