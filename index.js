@@ -6,26 +6,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const puppeteerConfig = {
-    headless: true,
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu',
-        '--remote-debugging-port=9222',
-        '--disable-web-security',
-        '--disable-features=site-per-process',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null
-};
+
 // إعداد Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -37,6 +18,23 @@ const repliesFile = path.join(dataDir, 'replies.json');
 const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
 // ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
+// ⭐ التعديل المقترح: إضافة executablePath
+const puppeteerConfig = {
+    headless: true,
+    // هذا السطر هو الحل: يستخدم متغير بيئة إذا كان موجودًا، وإلا يتركه فارغًا
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, 
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--remote-debugging-port=9222'
+    ]
+};
 
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -1211,10 +1209,8 @@ app.post('/api/settings', (req, res) => {
 app.get('/api/status', (req, res) => res.json({
     connected: botState.isConnected,
     qrCode: botState.qrCode,
-    qrGenerated: botState.qrGenerated || false,
     sessions: sessionManager.sessions.size,
-    problems: problemManager.problems.length,
-    timestamp: new Date().toISOString()
+    problems: problemManager.problems.length
 }));
 app.post('/api/toggle-reply', (req, res) => {
     settings.autoReply = !settings.autoReply;
@@ -1958,57 +1954,20 @@ app.get('/', (req, res) => {
             }
 
             // تحديث الإحصائيات
-            // في دالة checkStatus
-async function checkStatus() {
-    try {
-        const response = await fetch('/api/status');
-        const status = await response.json();
-        
-        const statusEl = document.getElementById('connectionStatus');
-        const qrEl = document.getElementById('qrCode');
-        
-        console.log('🔍 حالة الخادم:', status);
-        
-        if (status.connected) {
-            statusEl.className = 'status connected';
-            statusEl.textContent = '✅ متصل بـ واتساب';
-            qrEl.innerHTML = '<p>✅ البوت يعمل بشكل طبيعي</p>';
-        } else if (status.qrCode) {
-            statusEl.className = 'status disconnected';
-            statusEl.textContent = '📱 امسح QR Code لربط واتساب';
-            qrEl.innerHTML = '<img src="' + status.qrCode + '" alt="QR Code" style="max-width: 300px;">';
-        } else if (status.qrGenerated === false) {
-            statusEl.className = 'status disconnected';
-            statusEl.textContent = '⏳ جاري إنشاء QR Code...';
-            qrEl.innerHTML = '<p>⏳ يرجى الانتظار، جاري التحضير...</p>';
-        } else {
-            statusEl.className = 'status disconnected';
-            statusEl.textContent = '❌ جاري التهيئة...';
-            qrEl.innerHTML = '<p>🔄 جاري إعداد البوت...</p>';
-        }
-        
-        updateStats();
-    } catch (error) {
-        console.error('❌ خطأ في التحقق من الحالة:', error);
-        const statusEl = document.getElementById('connectionStatus');
-        statusEl.className = 'status disconnected';
-        statusEl.textContent = '❌ خطأ في الاتصال بالخادم';
-    }
-}
-// نظام مراقبة مفصل
-function logSystemStatus() {
-    console.log('📊 حالة النظام:', {
-        connected: botState.isConnected,
-        hasQR: !!botState.qrCode,
-        qrGenerated: botState.qrGenerated,
-        sessions: sessionManager.sessions.size,
-        memory: process.memoryUsage(),
-        uptime: process.uptime()
-    });
-}
-
-// تشغيل المراقبة كل 30 ثانية
-setInterval(logSystemStatus, 30000);
+            function updateStats() {
+                document.getElementById('sessionsCount').textContent = currentData.sessions?.total || 0;
+                document.getElementById('problemsCount').textContent = currentData.problems?.filter(p => p.status === 'new').length || 0;
+                document.getElementById('systemsCount').textContent = Object.keys(currentData.replies?.systemDetails || {}).length;
+                
+                const statusEl = document.getElementById('connectedStatus');
+                if (currentData.settings?.connected) {
+                    statusEl.textContent = '✅ متصل بـ واتساب';
+                    statusEl.className = 'status connected';
+                } else {
+                    statusEl.textContent = '❌ غير متصل';
+                    statusEl.className = 'status disconnected';
+                }
+            }
 
             // حفظ جميع الردود
             async function saveAllReplies() {
@@ -2345,26 +2304,18 @@ setInterval(logSystemStatus, 30000);
 
 // تشغيل البوت مع إدارة الجلسات
 function initializeBot() {
-    console.log('🚀 بدء تهيئة البوت...');
-    
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
         puppeteerOptions: puppeteerConfig,
         catchQR: (base64Qr) => {
-            console.log('✅ QR Code تم إنشاؤه بنجاح');
+            console.log('✅ QR Code جاهز');
             botState.qrCode = base64Qr;
-            // تحديث حالة البوت
-            botState.qrGenerated = true;
-        },
-        statusFind: (statusSession, session) => {
-            console.log('🔍 حالة الجلسة:', statusSession);
         }
     })
     .then(client => {
         console.log('✅ البوت المتطور جاهز للعمل!');
         botState.client = client;
         botState.isConnected = true;
-        botState.qrGenerated = false; // QR لم يعد مطلوباً
 
         // تنظيف الجلسات المنتهية كل 5 دقائق
         setInterval(() => sessionManager.cleanupExpiredSessions(), 5 * 60 * 1000);
@@ -2415,30 +2366,9 @@ function initializeBot() {
     });
 }
 
-// نظام استعادة الأخطاء
-let restartCount = 0;
-const MAX_RESTARTS = 5;
-
-function initializeBotWithRetry() {
-    initializeBot();
-    
-    // إعادة التشغيل بعد 30 ثانية إذا لم يعمل
-    const timeout = setTimeout(() => {
-        if (!botState.isConnected && !botState.qrCode) {
-            console.log('🔄 إعادة تشغيل البوت بسبب المهلة...');
-            restartCount++;
-            if (restartCount <= MAX_RESTARTS) {
-                initializeBot();
-            } else {
-                console.error('❌ تم تجاوز الحد الأقصى لإعادة التشغيل');
-            }
-        }
-    }, 30000);
-}
 // بدء التشغيل
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
-
