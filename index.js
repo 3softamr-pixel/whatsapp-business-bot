@@ -17,6 +17,7 @@ const sessionsDir = path.join(dataDir, 'sessions');
 const repliesFile = path.join(dataDir, 'replies.json');
 const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
+process.env.PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium';
 // ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
 const puppeteerConfig = {
     headless: true,
@@ -30,7 +31,7 @@ const puppeteerConfig = {
         '--single-process',
         '--disable-gpu'
     ],
-   
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
 };
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -2304,17 +2305,15 @@ function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
         puppeteerOptions: puppeteerConfig,
+        disableWelcome: true,
+        logQR: true,
         catchQR: (base64Qr, asciiQR) => {
             console.log('✅ QR Code جاهز للربط!');
-            console.log('📱 امسح هذا الـ QR Code بواسطة واتساب:');
+            console.log('📱 امسح QR Code من الكونسول:');
             console.log(asciiQR);
-    
-    // حفظ QR Code للعرض في الواجهة
+            
             botState.qrCode = base64Qr;
             botState.asciiQR = asciiQR;
-    
-    // يمكنك أيضاً حفظه في ملف إذا أردت
-            fs.writeFileSync('/tmp/qr-code.txt', asciiQR);
         }
     })
     .then(client => {
@@ -2378,6 +2377,7 @@ server.listen(PORT, '0.0.0.0', () => {
     initializeBot();
 
 });
+
 
 
 
