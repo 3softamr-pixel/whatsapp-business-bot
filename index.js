@@ -7,10 +7,9 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// ⭐ الحل النهائي: استخدام Chromium الموجود في النظام
+// ⭐ الحل النهائي: لا تستخدم executablePath - دع Puppeteer يتعامل معه
 const puppeteerConfig = {
-    executablePath: '/usr/bin/chromium-browser', // ⭐ موجود على Render
-    headless: 'new', // ⭐ استخدام headless الجديد
+    headless: 'new',
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -19,9 +18,27 @@ const puppeteerConfig = {
         '--no-first-run',
         '--no-zygote',
         '--single-process',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--remote-debugging-port=9222'
     ],
     ignoreHTTPSErrors: true
+};
+
+console.log('🚀 إعدادات Puppeteer:', puppeteerConfig);
+
+// ⭐ أضف postinstall في package.json لتثبيت المتصفح
+const packageJson = {
+    "name": "whatsapp-business-bot",
+    "version": "1.0.0",
+    "dependencies": {
+        "@wppconnect-team/wppconnect": "^1.24.0",
+        "express": "^4.18.0",
+        "puppeteer": "^21.0.0"
+    },
+    "scripts": {
+        "start": "node index.js",
+        "postinstall": "npx puppeteer browsers install chrome"
+    }
 };
 
 // التأكد من وجود المجلدات
@@ -30,44 +47,21 @@ const sessionsDir = path.join(dataDir, 'sessions');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir, { recursive: true });
 
-// ⭐ اختبار وجود المتصفح
-console.log('🔍 التحقق من المتصفحات المتاحة...');
-const possiblePaths = [
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-    '/usr/bin/google-chrome'
-];
-
-let foundBrowser = null;
-for (const browserPath of possiblePaths) {
-    if (fs.existsSync(browserPath)) {
-        foundBrowser = browserPath;
-        console.log('✅ وجدت المتصفح:', browserPath);
-        break;
-    }
-}
-
-if (!foundBrowser) {
-    console.log('❌ لم أجد أي متصفح، سيحاول Puppeteer استخدام المتصفح المدمج');
-} else {
-    puppeteerConfig.executablePath = foundBrowser;
-}
-
-// ⭐ هنا ضع كود مشروعك الكامل
-// نظام الجلسات، الردود الذكية، إلخ...
-
 // بدء البوت
 function initializeBot() {
-    console.log('🚀 بدء تشغيل البوت مع:', puppeteerConfig.executablePath || 'المتصفح الافتراضي');
+    console.log('🚀 بدء تشغيل البوت بدون تحديد مسار المتصفح...');
+    console.log('📝 Puppeteer سيجد المتصفح المدمج تلقائياً');
     
     wppconnect.create({
         session: 'WhatsAppBusinessBot',
-        puppeteerOptions: puppeteerConfig,
+        puppeteerOptions: puppeteerConfig, // ⭐ بدون executablePath
         catchQR: (base64Qr) => {
             console.log('📱 QR Code جاهز للربط!');
+            console.log('🔗 امسح الكود من تطبيق WhatsApp');
         },
         disableWelcome: true,
-        updatesLog: false
+        updatesLog: false,
+        logQR: true
     })
     .then((client) => {
         console.log('✅ البوت متصل بـ WhatsApp بنجاح!');
@@ -75,16 +69,30 @@ function initializeBot() {
         client.onMessage(async (message) => {
             if (message.fromMe) return;
             
-            // ⭐ كود الردود الذكية
-            if (message.body === 'مرحبا') {
-                await client.sendText(message.from, 'أهلاً بك! 🌟\nاختر الخدمة:\n1️⃣ أنظمة محاسبية\n2️⃣ خدمات تصميم');
+            console.log('📩 رسالة جديدة من:', message.from, '- المحتوى:', message.body);
+            
+            // ⭐ كود الردود البسيط
+            if (message.body.toLowerCase().includes('مرحبا') || message.body.toLowerCase().includes('اهلا')) {
+                await client.sendText(message.from, 
+                    'أهلاً بك! 🌟\n\n' +
+                    'اختر الخدمة:\n' +
+                    '1️⃣ أنظمة محاسبية\n' +
+                    '2️⃣ خدمات تصميم\n' +
+                    '3️⃣ التواصل مع المبيعات\n\n' +
+                    '📝 أرسل رقم الخدمة'
+                );
             }
         });
     })
     .catch((error) => {
         console.error('❌ خطأ في البوت:', error.message);
-        console.log('🔄 إعادة المحاولة بعد 15 ثانية...');
-        setTimeout(initializeBot, 15000);
+        
+        if (error.message.includes('browser') || error.message.includes('chrome')) {
+            console.log('💡 الحل: تأكد من إضافة postinstall في package.json');
+        }
+        
+        console.log('🔄 إعادة المحاولة بعد 20 ثانية...');
+        setTimeout(initializeBot, 20000);
     });
 }
 
@@ -96,16 +104,26 @@ app.get('/', (req, res) => {
         <head>
             <title>WhatsApp Business Bot - التشغيل</title>
             <style>
-                body { font-family: Arial; text-align: center; padding: 50px; }
-                .info { background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px; }
+                body { font-family: Arial; text-align: center; padding: 50px; background: #f5f5f5; }
+                .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+                .success { background: #d4edda; color: #155724; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                .info { background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 15px 0; }
             </style>
         </head>
         <body>
-            <h1>🤖 WhatsApp Business Bot</h1>
-            <div class="info">
-                <h2>✅ النظام يعمل</h2>
-                <p>المتصفح: ${puppeteerConfig.executablePath || 'سيستخدم الافتراضي'}</p>
-                <p>الحالة: جاري التشغيل...</p>
+            <div class="container">
+                <h1>🤖 WhatsApp Business Bot</h1>
+                <div class="success">
+                    <h2>✅ الخادم يعمل بنجاح</h2>
+                    <p>جاري تشغيل البوت الكامل...</p>
+                </div>
+                <div class="info">
+                    <h3>📊 معلومات النظام</h3>
+                    <p><strong>الحالة:</strong> 🔄 جاري الاتصال بـ WhatsApp</p>
+                    <p><strong>المتصفح:</strong> سيستخدم Puppeteer المتصفح المدمج</p>
+                    <p><strong>الرابط:</strong> https://whatsapp-business-bot-90cr.onrender.com</p>
+                </div>
+                <p>⏳ قد يستغرق الاتصال الأولي بضع دقائق...</p>
             </div>
         </body>
         </html>
@@ -116,7 +134,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 الخادم يعمل على: http://0.0.0.0:' + PORT);
-    console.log('🔧 إعدادات المتصفح:', puppeteerConfig);
+    console.log('🌐 الرابط العام: https://whatsapp-business-bot-90cr.onrender.com');
     
     setTimeout(initializeBot, 3000);
 });
