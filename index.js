@@ -7,10 +7,10 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// ⭐ إعدادات Puppeteer المتوافقة مع Render
+// ⭐ الحل النهائي: استخدام Chromium الموجود في النظام
 const puppeteerConfig = {
-    executablePath: '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome',
-    headless: true,
+    executablePath: '/usr/bin/chromium-browser', // ⭐ موجود على Render
+    headless: 'new', // ⭐ استخدام headless الجديد
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -24,61 +24,88 @@ const puppeteerConfig = {
     ignoreHTTPSErrors: true
 };
 
-// ⭐ هنا ضع كل كود مشروعك الكامل:
-// - نظام الجلسات
-// - واجهة التحكم  
-// - إدارة المشاكل
-// - الردود الذكية
-// - كل الميزات الأخرى
+// التأكد من وجود المجلدات
+const dataDir = path.join(__dirname, 'data');
+const sessionsDir = path.join(dataDir, 'sessions');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir, { recursive: true });
+
+// ⭐ اختبار وجود المتصفح
+console.log('🔍 التحقق من المتصفحات المتاحة...');
+const possiblePaths = [
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/bin/google-chrome'
+];
+
+let foundBrowser = null;
+for (const browserPath of possiblePaths) {
+    if (fs.existsSync(browserPath)) {
+        foundBrowser = browserPath;
+        console.log('✅ وجدت المتصفح:', browserPath);
+        break;
+    }
+}
+
+if (!foundBrowser) {
+    console.log('❌ لم أجد أي متصفح، سيحاول Puppeteer استخدام المتصفح المدمج');
+} else {
+    puppeteerConfig.executablePath = foundBrowser;
+}
+
+// ⭐ هنا ضع كود مشروعك الكامل
+// نظام الجلسات، الردود الذكية، إلخ...
 
 // بدء البوت
-function initializeFullBot() {
-    console.log('🚀 بدء تشغيل البوت الكامل...');
+function initializeBot() {
+    console.log('🚀 بدء تشغيل البوت مع:', puppeteerConfig.executablePath || 'المتصفح الافتراضي');
     
     wppconnect.create({
-        session: 'EnhancedMultiLevelBot',
+        session: 'WhatsAppBusinessBot',
         puppeteerOptions: puppeteerConfig,
         catchQR: (base64Qr) => {
             console.log('📱 QR Code جاهز للربط!');
         },
-        disableWelcome: true
+        disableWelcome: true,
+        updatesLog: false
     })
     .then((client) => {
-        console.log('✅ البوت الكامل متصل بـ WhatsApp!');
+        console.log('✅ البوت متصل بـ WhatsApp بنجاح!');
         
-        // ⭐ هنا ضع كل كود معالجة الرسائل
         client.onMessage(async (message) => {
             if (message.fromMe) return;
             
-            // كود الردود الذكية والقوائم المتعددة
-            // نظام الجلسات والمشاكل
-            // كل ميزات مشروعك
+            // ⭐ كود الردود الذكية
+            if (message.body === 'مرحبا') {
+                await client.sendText(message.from, 'أهلاً بك! 🌟\nاختر الخدمة:\n1️⃣ أنظمة محاسبية\n2️⃣ خدمات تصميم');
+            }
         });
     })
     .catch((error) => {
-        console.error('❌ خطأ في البوت:', error);
-        setTimeout(initializeFullBot, 10000);
+        console.error('❌ خطأ في البوت:', error.message);
+        console.log('🔄 إعادة المحاولة بعد 15 ثانية...');
+        setTimeout(initializeBot, 15000);
     });
 }
 
-// ⭐ استخدم كود مشروعك الحقيقي هنا
+// واجهة الويب
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>WhatsApp Business Bot - النظام الكامل</title>
+            <title>WhatsApp Business Bot - التشغيل</title>
             <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                .success { background: #d4edda; color: #155724; padding: 20px; border-radius: 10px; }
+                body { font-family: Arial; text-align: center; padding: 50px; }
+                .info { background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px; }
             </style>
         </head>
         <body>
-            <h1>🤖 WhatsApp Business Bot - النظام الكامل</h1>
-            <div class="success">
-                <h2>✅ النظام جاهز بالكامل!</h2>
-                <p>المتصفح: /opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome</p>
-                <p>🚀 جاري تشغيل كل الميزات...</p>
+            <h1>🤖 WhatsApp Business Bot</h1>
+            <div class="info">
+                <h2>✅ النظام يعمل</h2>
+                <p>المتصفح: ${puppeteerConfig.executablePath || 'سيستخدم الافتراضي'}</p>
+                <p>الحالة: جاري التشغيل...</p>
             </div>
         </body>
         </html>
@@ -88,8 +115,8 @@ app.get('/', (req, res) => {
 // بدء التشغيل
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log('🚀 النظام الكامل يعمل على: http://0.0.0.0:' + PORT);
-    console.log('🔧 بدء تشغيل البوت الكامل...');
+    console.log('🚀 الخادم يعمل على: http://0.0.0.0:' + PORT);
+    console.log('🔧 إعدادات المتصفح:', puppeteerConfig);
     
-    setTimeout(initializeFullBot, 3000);
+    setTimeout(initializeBot, 3000);
 });
