@@ -2305,15 +2305,9 @@ function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
         puppeteerOptions: puppeteerConfig,
-        disableWelcome: true,
-        logQR: true,
-        catchQR: (base64Qr, asciiQR) => {
-            console.log('✅ QR Code جاهز للربط!');
-            console.log('📱 امسح QR Code من الكونسول:');
-            console.log(asciiQR);
-            
+        catchQR: (base64Qr) => {
+            console.log('✅ QR Code جاهز');
             botState.qrCode = base64Qr;
-            botState.asciiQR = asciiQR;
         }
     })
     .then(client => {
@@ -2370,6 +2364,7 @@ function initializeBot() {
     });
 }
 
+
 // بدء التشغيل
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
@@ -2377,6 +2372,7 @@ server.listen(PORT, '0.0.0.0', () => {
     initializeBot();
 
 });
+
 
 
 
