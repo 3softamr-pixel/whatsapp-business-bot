@@ -1,22 +1,11 @@
 {
-  "name": "whatsapp-business-bot",
-  "version": "1.0.0",
-  "description": "WhatsApp Business Bot with multi-level menus and smart filtering",
-  "main": "index.js",
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "@wppconnect-team/wppconnect": "^1.24.0",
+    "express": "^4.18.0"
+  },
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js",
-    "build": "echo 'No build step'"
-  },
-  "keywords": ["whatsapp", "bot", "business", "automation"],
-  "author": "3softamr-pixel",
-  "license": "MIT",
-  "dependencies": {
-    "@wppconnect-team/wppconnect": "^1.37.8",
-    "express": "^5.1.0",
-    "qrcode-terminal": "^0.12.0"
-  },
-  "engines": {
-    "node": "18.x"
+    "postinstall": "npx puppeteer browsers install chrome"
   }
 }
