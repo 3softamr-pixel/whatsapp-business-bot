@@ -17,7 +17,6 @@ const sessionsDir = path.join(dataDir, 'sessions');
 const repliesFile = path.join(dataDir, 'replies.json');
 const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
-process.env.PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium';
 // ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
 const puppeteerConfig = {
     headless: true,
@@ -29,9 +28,9 @@ const puppeteerConfig = {
         '--no-first-run',
         '--no-zygote',
         '--single-process',
-        '--disable-gpu'
-    ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
+        '--disable-gpu',
+        '--remote-debugging-port=9222'
+    ]
 };
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -2300,7 +2299,6 @@ app.get('/', (req, res) => {
 });
 
 // تشغيل البوت مع إدارة الجلسات
-// إصلاح إضافي لمسار Chrome
 function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
@@ -2364,18 +2362,9 @@ function initializeBot() {
     });
 }
 
-
 // بدء التشغيل
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
-
 });
-
-
-
-
-
-
-
