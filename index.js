@@ -21,8 +21,10 @@ const problemsFile = path.join(dataDir, 'problems.json');
 // ⭐ التعديل المقترح: إضافة executablePath
 const puppeteerConfig = {
     headless: true,
-    // هذا السطر هو الحل: يستخدم متغير بيئة إذا كان موجودًا، وإلا يتركه فارغًا
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, 
+    executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH ||
+        '/usr/bin/chromium-browser' ||
+        '/usr/bin/chromium',
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -2372,3 +2374,4 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
