@@ -2308,10 +2308,13 @@ app.get('/', (req, res) => {
 function initializeBot() {
     wppconnect.create({
         session: 'EnhancedMultiLevelBot',
+        useChrome: true,
         puppeteerOptions: puppeteerConfig,
-        catchQR: (base64Qr) => {
-            console.log('✅ QR Code جاهز');
-            botState.qrCode = base64Qr;
+        catchQR: (qrCode, asciiQR) => {
+            console.log('\n\n===== QR READY =====');
+            console.log(asciiQR);
+            console.log('====================\n');
+            botState.qrCode = qrCode; 
         }
     })
     .then(client => {
@@ -2319,39 +2322,35 @@ function initializeBot() {
         botState.client = client;
         botState.isConnected = true;
 
-        // تنظيف الجلسات المنتهية كل 5 دقائق
         setInterval(() => sessionManager.cleanupExpiredSessions(), 5 * 60 * 1000);
 
         client.onMessage(async message => {
             if (message.fromMe) return;
-            
+
             if (!settings.autoReply) {
                 console.log('📩 رسالة (الرد التلقائي معطل):', message.body);
                 return;
             }
 
-            // ✅ نظام التصفية الذكي - الإضافة الجديدة
             if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
                 const shouldReply = await smartFilter.shouldReply(message, client);
                 if (!shouldReply) {
-                    console.log('🚫 تم تصفية الرسالة من:', message.from, '- المحتوى:', message.body?.substring(0, 50));
+                    console.log('🚫 تم تصفية الرسالة من:', message.from);
                     return;
                 }
             }
 
             try {
                 const response = await processUserInput(
-                    message.from, 
-                    message.notifyName || 'عميل', 
-                    message.body, 
+                    message.from,
+                    message.notifyName || 'عميل',
+                    message.body,
                     client
                 );
-                
+
                 if (response) {
                     await client.sendText(message.from, response);
-                    console.log('🤖 تم الرد على:', message.from);
-                    
-                    // ✅ إضافة الرقم لقائمة المعرفة بعد الرد الناجح
+
                     if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
                         smartFilter.addKnownContact(message.from);
                     }
@@ -2368,11 +2367,13 @@ function initializeBot() {
     });
 }
 
+
 // بدء التشغيل
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
