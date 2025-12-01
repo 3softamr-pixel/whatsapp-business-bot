@@ -23,8 +23,7 @@ const puppeteerConfig = {
     headless: true,
     executablePath:
         process.env.PUPPETEER_EXECUTABLE_PATH ||
-        '/usr/bin/chromium-browser' ||
-        '/usr/bin/chromium',
+        '/usr/bin/google-chrome-stable',  // التعديل المهم
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -37,6 +36,7 @@ const puppeteerConfig = {
         '--remote-debugging-port=9222'
     ]
 };
+
 
 // التأكد من وجود المجلدات
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
@@ -2374,4 +2374,5 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
