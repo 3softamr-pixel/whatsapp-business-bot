@@ -2289,44 +2289,45 @@ app.get('/', (req, res) => {
 });
 
 // تشغيل البوت مع إدارة الجلسات
-function initializeBot() {
-    wppconnect.create({
-    session: 'EnhancedMultiLevelBot',
+async function initializeBot() {
+    try {
+        const client = await wppconnect.create({
+            session: 'EnhancedMultiLevelBot',
 
-    // منع استخدام Chrome
-    useChrome: false,
+            // منع استخدام Google Chrome
+            useChrome: false,
 
-    // إجبار WPPConnect على استخدام Chromium
-    browserPathExecutable: '/usr/bin/chromium-browser',
+            // Puppeteer يستخدم Chromium الافتراضي
+            puppeteerOptions: {
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-infobars',
+                    '--no-zygote',
+                    '--single-process',
+                    '--remote-debugging-port=9222'
+                ]
+            },
 
-    puppeteerOptions: {
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-infobars',
-            '--no-zygote',
-            '--single-process',
-            '--remote-debugging-port=9222'
-        ]
-    },
+            catchQR: (base64QR, asciiQR) => {
+                console.log("======= QR CODE =======");
+                console.log(asciiQR); // عرض ASCII QR في console
+                console.log("========================");
+                botState.qrCode = base64QR; // حفظ QR كـ base64
+            }
+        });
 
-    catchQR: (base64QR, asciiQR) => {
-        console.log("======= QR CODE =======");
-        console.log(asciiQR);
-        console.log("========================");
-        botState.qrCode = base64QR;
-    }
-})
-    .then(client => {
         console.log('✅ البوت المتطور جاهز للعمل!');
         botState.client = client;
         botState.isConnected = true;
 
+        // تنظيف الجلسات المنتهية كل 5 دقائق
         setInterval(() => sessionManager.cleanupExpiredSessions(), 5 * 60 * 1000);
 
+        // الاستماع للرسائل الواردة
         client.onMessage(async message => {
             if (message.fromMe) return;
 
@@ -2335,10 +2336,11 @@ function initializeBot() {
                 return;
             }
 
-            if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
+            // نظام التصفية الذكي
+            if (settings.advancedFilters?.enableContactFilter) {
                 const shouldReply = await smartFilter.shouldReply(message, client);
                 if (!shouldReply) {
-                    console.log('🚫 تم تصفية الرسالة من:', message.from);
+                    console.log('🚫 تم تصفية الرسالة من:', message.from, '- المحتوى:', message.body?.substring(0, 50));
                     return;
                 }
             }
@@ -2353,8 +2355,10 @@ function initializeBot() {
 
                 if (response) {
                     await client.sendText(message.from, response);
+                    console.log('🤖 تم الرد على:', message.from);
 
-                    if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
+                    // إضافة الرقم لقائمة المعرفة بعد الرد
+                    if (settings.advancedFilters?.enableContactFilter) {
                         smartFilter.addKnownContact(message.from);
                     }
                 }
@@ -2363,12 +2367,14 @@ function initializeBot() {
             }
         });
 
-    })
-    .catch(err => {
+    } catch (err) {
         console.error('❌ خطأ في البوت:', err);
+
+        // إعادة المحاولة بعد 10 ثوانٍ إذا حدث خطأ
         setTimeout(initializeBot, 10000);
-    });
+    }
 }
+
 
 
 // بدء التشغيل
@@ -2377,6 +2383,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
