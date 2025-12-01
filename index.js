@@ -19,36 +19,7 @@ const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
 // ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
 // ⭐ التعديل المقترح: إضافة executablePath
-wppconnect.create({
-    session: 'EnhancedMultiLevelBot',
 
-    // منع استخدام Chrome
-    useChrome: false,
-
-    // إجبار WPPConnect على استخدام Chromium
-    browserPathExecutable: '/usr/bin/chromium-browser',
-
-    puppeteerOptions: {
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-infobars',
-            '--no-zygote',
-            '--single-process',
-            '--remote-debugging-port=9222'
-        ]
-    },
-
-    catchQR: (base64QR, asciiQR) => {
-        console.log("======= QR CODE =======");
-        console.log(asciiQR);
-        console.log("========================");
-        botState.qrCode = base64QR;
-    }
-});
 
 
 // التأكد من وجود المجلدات
@@ -2320,16 +2291,35 @@ app.get('/', (req, res) => {
 // تشغيل البوت مع إدارة الجلسات
 function initializeBot() {
     wppconnect.create({
-        session: 'EnhancedMultiLevelBot',
-        useChrome: true,
-        puppeteerOptions: puppeteerConfig,
-        catchQR: (qrCode, asciiQR) => {
-            console.log('\n\n===== QR READY =====');
-            console.log(asciiQR);
-            console.log('====================\n');
-            botState.qrCode = qrCode; 
-        }
-    })
+    session: 'EnhancedMultiLevelBot',
+
+    // منع استخدام Chrome
+    useChrome: false,
+
+    // إجبار WPPConnect على استخدام Chromium
+    browserPathExecutable: '/usr/bin/chromium-browser',
+
+    puppeteerOptions: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-infobars',
+            '--no-zygote',
+            '--single-process',
+            '--remote-debugging-port=9222'
+        ]
+    },
+
+    catchQR: (base64QR, asciiQR) => {
+        console.log("======= QR CODE =======");
+        console.log(asciiQR);
+        console.log("========================");
+        botState.qrCode = base64QR;
+    }
+})
     .then(client => {
         console.log('✅ البوت المتطور جاهز للعمل!');
         botState.client = client;
@@ -2387,6 +2377,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
