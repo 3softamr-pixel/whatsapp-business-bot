@@ -19,23 +19,36 @@ const settingsFile = path.join(dataDir, 'settings.json');
 const problemsFile = path.join(dataDir, 'problems.json');
 // ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
 // ⭐ التعديل المقترح: إضافة executablePath
-const puppeteerConfig = {
-    headless: true,
-    executablePath:
-        process.env.PUPPETEER_EXECUTABLE_PATH ||
-        '/usr/bin/google-chrome-stable',  // التعديل المهم
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu',
-        '--remote-debugging-port=9222'
-    ]
-};
+wppconnect.create({
+    session: 'EnhancedMultiLevelBot',
+
+    // منع استخدام Chrome
+    useChrome: false,
+
+    // إجبار WPPConnect على استخدام Chromium
+    browserPathExecutable: '/usr/bin/chromium-browser',
+
+    puppeteerOptions: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-infobars',
+            '--no-zygote',
+            '--single-process',
+            '--remote-debugging-port=9222'
+        ]
+    },
+
+    catchQR: (base64QR, asciiQR) => {
+        console.log("======= QR CODE =======");
+        console.log(asciiQR);
+        console.log("========================");
+        botState.qrCode = base64QR;
+    }
+});
 
 
 // التأكد من وجود المجلدات
@@ -2374,6 +2387,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
