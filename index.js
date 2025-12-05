@@ -4,6 +4,36 @@ const wppconnect = require('@wppconnect-team/wppconnect');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+
+// ==================== إنشاء ملف index.html تلقائياً ====================
+function createIndexHTML() {
+    const htmlContent = `<!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>نظام البوت المطور</title>
+    </head>
+    <body>
+        <h1>🤖 نظام البوت المطور</h1>
+        <p>🎪 نظام الجلسات المتعددة جاهز (3 مستخدمين)</p>
+    </body>
+    </html>`;
+    
+    const htmlPath = path.join(__dirname, 'index.html');
+    
+    try {
+        if (!fs.existsSync(htmlPath)) {
+            fs.writeFileSync(htmlPath, htmlContent);
+            console.log('✅ تم إنشاء ملف index.html');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في إنشاء index.html:', error.message);
+    }
+}
+
+// استدعاء الدالة
+createIndexHTML();
 const app = express();
 const server = http.createServer(app);
 // ⭐ التعديل الأساسي: إضافة استيراد المكتبة
@@ -3149,6 +3179,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
