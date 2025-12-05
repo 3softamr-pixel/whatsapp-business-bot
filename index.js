@@ -7,6 +7,7 @@ const wppconnect = require('@wppconnect-team/wppconnect');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+const dataDir = path.join(__dirname, 'data');
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
 
 // التأكد من وجود المجلدات
@@ -3150,6 +3151,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
