@@ -10,9 +10,22 @@ const path = require('path');
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
 
 // التأكد من وجود المجلدات
-[dataDir, sessionsDir, multiSessionsDir].forEach(dir => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+function createDirectories() {
+    const dirs = [dataDir, sessionsDir, multiSessionsDir];
+    dirs.forEach(dir => {
+        try {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+                console.log(`📁 تم إنشاء مجلد: ${dir}`);
+            }
+        } catch (error) {
+            console.error(`❌ خطأ في إنشاء مجلد ${dir}:`, error.message);
+        }
+    });
+}
+
+// تنفيذ إنشاء المجلدات
+createDirectories();
 
 function cleanupChromiumFiles() {
     try {
@@ -3137,6 +3150,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
