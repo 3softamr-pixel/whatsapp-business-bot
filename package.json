@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node index.js",
-    "install-chromium": "node node_modules/@sparticuz/chromium/bin/install.js"
+    "install-chromium": "node node_modules/@sparticuz/chromium/bin/install.js",
+    "build": "npm install --omit=dev"
   },
   "engines": {
     "node": "18.x"
