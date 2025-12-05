@@ -6,13 +6,9 @@ const fs = require('fs');
 const path = require('path');
 
 // ⭐⭐⭐ تعريف جميع المسارات أولاً ⭐⭐⭐
-const dataDir = path.join(__dirname, 'data');
-const sessionsDir = path.join(dataDir, 'sessions'); // ⭐ أضف هذا السطر
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
-
-// الآن يمكنك استخدام sessionsDir بأمان
 function createDirectories() {
-    const dirs = [dataDir, sessionsDir, multiSessionsDir]; // ✅ الآن جميعها معرّفة
+    const dirs = [multiSessionsDir]; // ✅ ضعها في مصفوفة
     dirs.forEach(dir => {
         try {
             if (!fs.existsSync(dir)) {
@@ -24,6 +20,9 @@ function createDirectories() {
         }
     });
 }
+
+// تنفيذ إنشاء المجلدات
+createDirectories();
 
 
 
@@ -3150,6 +3149,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
