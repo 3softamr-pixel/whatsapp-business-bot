@@ -16,7 +16,7 @@ const server = http.createServer(app);
 const puppeteerConfig = {
     headless: true,
     args: chromium.args,
-    executablePath: process.env.CHROMIUM_PATH || await chromium.executablePath(),
+    executablePath: process.env.CHROMIUM_PATH ||  chromium.executablePath(),
     ignoreDefaultArgs: ['--disable-extensions'],
     userDataDir: './user_data'
 };
@@ -2448,6 +2448,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
