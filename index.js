@@ -2375,7 +2375,143 @@ async function initializeAllSystems() {
 ////////////////
 
 
-
+app.get('/page', (req, res) => {
+    const html = '<!DOCTYPE html>' +
+                 '<html lang="ar" dir="rtl">' +
+                 '<head>' +
+                 '<meta charset="UTF-8">' +
+                 '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                 '<title>🎪 نظام الجلسات المتعددة</title>' +
+                 '<style>' +
+                 'body { font-family: Arial; padding: 20px; text-align: center; background: #f5f5f5; }' +
+                 '.container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }' +
+                 'h1 { color: #25D366; }' +
+                 '.btn { display: inline-block; padding: 12px 24px; margin: 10px; background: #25D366; color: white; text-decoration: none; border-radius: 5px; }' +
+                 '.btn:hover { background: #128C7E; }' +
+                 '</style>' +
+                 '</head>' +
+                 '<body>' +
+                 '<div class="container">' +
+                 '<h1>🎪 نظام الجلسات المتعددة</h1>' +
+                 '<p>إدارة 3 جلسات WhatsApp مستقلة</p>' +
+                 
+                 '<div style="margin: 30px 0;">' +
+                 '<a href="/" class="btn">🏠 الرئيسية</a>' +
+                 '<a href="/api/multi-sessions" class="btn" target="_blank">📊 الحالة</a>' +
+                 '</div>' +
+                 
+                 '<h3>📱 إنشاء جلسة جديدة</h3>' +
+                 '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">' +
+                 '<input type="text" id="userName" placeholder="اسم المستخدم" style="padding: 10px; margin: 5px; width: 200px;">' +
+                 '<br>' +
+                 '<input type="text" id="userId" placeholder="رقم الهاتف" style="padding: 10px; margin: 5px; width: 200px;">' +
+                 '<br>' +
+                 '<button onclick="createSession()" class="btn" style="margin-top: 15px;">🚀 إنشاء جلسة</button>' +
+                 '</div>' +
+                 
+                 '<div id="result" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>' +
+                 
+                 '<h3>📊 الجلسات النشطة</h3>' +
+                 '<div id="sessionsList" style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; min-height: 100px;">' +
+                 'جاري التحميل...' +
+                 '</div>' +
+                 
+                 '<button onclick="loadSessions()" class="btn">🔄 تحديث القائمة</button>' +
+                 '</div>' +
+                 
+                 '<script>' +
+                 'async function createSession() {' +
+                 '    const userName = document.getElementById("userName").value;' +
+                 '    const userId = document.getElementById("userId").value;' +
+                 '    ' +
+                 '    if (!userName || !userId) {' +
+                 '        showResult("الرجاء إدخال جميع البيانات", "error");' +
+                 '        return;' +
+                 '    }' +
+                 '    ' +
+                 '    try {' +
+                 '        const response = await fetch("/api/multi-sessions/create", {' +
+                 '            method: "POST",' +
+                 '            headers: { "Content-Type": "application/json" },' +
+                 '            body: JSON.stringify({ userName, userId })' +
+                 '        });' +
+                 '        ' +
+                 '        const data = await response.json();' +
+                 '        ' +
+                 '        if (data.success) {' +
+                 '            showResult("✅ " + data.message, "success");' +
+                 '            document.getElementById("userName").value = "";' +
+                 '            document.getElementById("userId").value = "";' +
+                 '            setTimeout(loadSessions, 2000);' +
+                 '        } else {' +
+                 '            showResult("❌ " + data.error, "error");' +
+                 '        }' +
+                 '    } catch (error) {' +
+                 '        showResult("❌ خطأ في الاتصال: " + error.message, "error");' +
+                 '    }' +
+                 '}' +
+                 '' +
+                 'async function loadSessions() {' +
+                 '    try {' +
+                 '        const response = await fetch("/api/multi-sessions");' +
+                 '        const data = await response.json();' +
+                 '        ' +
+                 '        let html = "";' +
+                 '        if (data.success && data.sessions && data.sessions.length > 0) {' +
+                 '            data.sessions.forEach(session => {' +
+                 '                html += \'<div style="background: \' + (session.connected ? "#d4edda" : "#f8d7da") + \'; padding: 15px; margin: 10px; border-radius: 8px;">\' +' +
+                 '                        \'<strong>\' + session.userName + \'</strong> (\' + session.userId + \')<br>\' +' +
+                 '                        \'حالة: \' + (session.connected ? "✅ متصل" : "❌ غير متصل") + \'<br>\' +' +
+                 '                        \'<button onclick="showQR(\\\'\' + session.userId + \'\\\')" style="padding: 5px 10px; margin-top: 5px;">\' +' +
+                 '                        \'📱 عرض QR\' +' +
+                 '                        \'</button>\' +' +
+                 '                        \'</div>\';' +
+                 '            });' +
+                 '        } else {' +
+                 '            html = "<p>لا توجد جلسات نشطة</p>";' +
+                 '        }' +
+                 '        ' +
+                 '        document.getElementById("sessionsList").innerHTML = html;' +
+                 '    } catch (error) {' +
+                 '        document.getElementById("sessionsList").innerHTML = "<p>❌ خطأ في التحميل</p>";' +
+                 '    }' +
+                 '}' +
+                 '' +
+                 'async function showQR(userId) {' +
+                 '    try {' +
+                 '        const response = await fetch("/api/multi-sessions/" + userId + "/qr");' +
+                 '        const data = await response.json();' +
+                 '        ' +
+                 '        if (data.success && data.qrCode) {' +
+                 '            const newWindow = window.open("", "_blank");' +
+                 '            newWindow.document.write(\'<html><body style="text-align: center; padding: 50px;"><h2>📱 QR Code</h2><img src="\' + data.qrCode + \'" style="max-width: 300px;"><p>امسح هذا الكود بواسطة WhatsApp</p></body></html>\');' +
+                 '        } else {' +
+                 '            alert("❌ لا يوجد QR Code للجلسة");' +
+                 '        }' +
+                 '    } catch (error) {' +
+                 '        alert("❌ خطأ: " + error.message);' +
+                 '    }' +
+                 '}' +
+                 '' +
+                 'function showResult(message, type) {' +
+                 '    const resultDiv = document.getElementById("result");' +
+                 '    resultDiv.innerHTML = message;' +
+                 '    resultDiv.style.display = "block";' +
+                 '    resultDiv.style.background = type === "success" ? "#d4edda" : "#f8d7da";' +
+                 '    resultDiv.style.color = type === "success" ? "#155724" : "#721c24";' +
+                 '    ' +
+                 '    setTimeout(() => {' +
+                 '        resultDiv.style.display = "none";' +
+                 '    }, 5000);' +
+                 '}' +
+                 '' +
+                 'document.addEventListener("DOMContentLoaded", loadSessions);' +
+                 '</script>' +
+                 '</body>' +
+                 '</html>';
+    
+    res.send(html);
+});
 
 
 
@@ -4800,6 +4936,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
