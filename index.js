@@ -140,13 +140,12 @@ function cleanupOldSessions() {
 class MultiSessionManager {
     constructor(maxSessions = 3) {
         this.maxSessions = maxSessions;
-        this.activeSessions = new Map(); // sessionId -> {client, data, settings}
-        this.sessionConfigs = new Map(); // userId -> config
+        this.activeSessions = new Map();
+        this.sessionConfigs = new Map();
         this.loadSessionConfigs();
         console.log(`🎯 نظام الجلسات المتعددة جاهز (${maxSessions} مستخدمين)`);
     }
 
-    // تحميل تكوينات الجلسات المحفوظة
     loadSessionConfigs() {
         try {
             const configFile = path.join(dataDir, 'multi_sessions_config.json');
@@ -162,16 +161,13 @@ class MultiSessionManager {
         }
     }
 
-    // حفظ تكوينات الجلسات
     saveSessionConfigs() {
         const configs = Array.from(this.sessionConfigs.values());
         const configFile = path.join(dataDir, 'multi_sessions_config.json');
         fs.writeFileSync(configFile, JSON.stringify(configs, null, 2));
     }
 
-    // إنشاء جلسة جديدة لمستخدم
     async createSession(userId, userName, customConfig = {}) {
-        // التحقق من الحد الأقصى
         if (this.activeSessions.size >= this.maxSessions) {
             throw new Error(`❌ وصلت للحد الأقصى للجلسات (${this.maxSessions})`);
         }
@@ -179,10 +175,8 @@ class MultiSessionManager {
         const sessionId = `ms_${Date.now()}_${userId.replace(/[^0-9]/g, '')}`;
         const sessionDir = path.join(multiSessionsDir, sessionId);
         
-        // إنشاء مجلد الجلسة
         fs.mkdirSync(sessionDir, { recursive: true });
 
-        // تكوين الجلسة
         const sessionConfig = {
             sessionId,
             userId,
@@ -199,7 +193,6 @@ class MultiSessionManager {
             ...customConfig
         };
 
-        // حفظ التكوين
         this.sessionConfigs.set(userId, sessionConfig);
         this.saveSessionConfigs();
 
@@ -207,13 +200,10 @@ class MultiSessionManager {
         return sessionConfig;
     }
 
-    // ⭐⭐ الإصلاح الرئيسي: استخدم نفس إعدادات Puppeteer للنظام الرئيسي ⭐⭐
     async getPuppeteerOptions(userDataDir) {
         try {
-            // استخدم نفس الكود الموجود في getPuppeteerConfig للنظام الرئيسي
             let executablePath;
             
-            // المحاولة مع @sparticuz/chromium أولاً (يعمل على Render)
             try {
                 const chromium = require('@sparticuz/chromium');
                 executablePath = await chromium.executablePath();
@@ -221,28 +211,24 @@ class MultiSessionManager {
             } catch (chromiumError) {
                 console.log(`⚠️ [MultiSession] @sparticuz/chromium not available:`, chromiumError.message);
                 
-                // البحث عن chromium في المسارات الشائعة
                 const possiblePaths = [
                     process.env.PUPPETEER_EXECUTABLE_PATH,
                     process.env.CHROMIUM_PATH,
                     '/usr/bin/chromium-browser',
                     '/usr/bin/chromium',
                     '/usr/bin/google-chrome-stable',
-                    '/usr/bin/google-chrome',
-                    '/opt/render/.cache/puppeteer/chrome/linux-143.0.7499.40/chrome-linux64/chrome'
+                    '/usr/bin/google-chrome'
                 ].filter(Boolean);
                 
                 for (const path of possiblePaths) {
                     if (fs.existsSync(path)) {
                         executablePath = path;
-                        console.log(`✅ [MultiSession] Found Chrome at: ${path}`);
                         break;
                     }
                 }
             }
             
-            // إذا لم نجد أي مسار، استخدم الإعدادات البسيطة
-            const puppeteerOptions = {
+            return {
                 headless: 'new',
                 executablePath: executablePath || undefined,
                 args: [
@@ -253,26 +239,15 @@ class MultiSessionManager {
                     '--disable-gpu',
                     '--no-first-run',
                     '--no-zygote',
-                    '--single-process',
-                    '--disable-web-security',
-                    '--disable-features=site-per-process'
+                    '--single-process'
                 ],
                 userDataDir: userDataDir,
-                timeout: 60000,
-                ignoreDefaultArgs: ['--disable-extensions']
+                timeout: 60000
             };
-            
-            console.log(`🔧 [MultiSession] Puppeteer options for ${userDataDir}:`, {
-                hasExecutablePath: !!executablePath,
-                argsCount: puppeteerOptions.args.length
-            });
-            
-            return puppeteerOptions;
             
         } catch (error) {
             console.error(`❌ [MultiSession] Error getting puppeteer options:`, error);
             
-            // Fallback بسيط
             return {
                 headless: 'new',
                 args: [
@@ -286,199 +261,83 @@ class MultiSessionManager {
         }
     }
 
-    // ⭐⭐ الإصلاح: دالة بدء الجلسة المعدلة ⭐⭐
+    // ⭐⭐ الدالة المعدلة - تعريف واحد فقط ⭐⭐
     async startSession(sessionConfig) {
-  async startSession(sessionConfig) {
-    try {
-        console.log(`🚀 [MultiSession] بدء جلسة WhatsApp لـ ${sessionConfig.userName}`);
-        
-        // الحصول على إعدادات Puppeteer (نفس النظام الرئيسي)
-        const puppeteerOptions = await this.getPuppeteerOptions(sessionConfig.dir);
-        
-        const client = await wppconnect.create({
-            session: sessionConfig.sessionId,
-            puppeteerOptions: puppeteerOptions,
+        try {
+            console.log(`🚀 [MultiSession] بدء جلسة WhatsApp لـ ${sessionConfig.userName}`);
             
-            // ⭐⭐⭐ التعديل هنا ⭐⭐⭐
-            catchQR: (base64Qr, asciiQR) => {
-                console.log(`✅ [MultiSession] QR Code جاهز لـ ${sessionConfig.userName}`);
-                console.log(`📏 حجم QR Code: ${base64Qr ? base64Qr.length : 0} حرف`);
-                
-                if (!base64Qr) {
-                    console.error(`❌ [MultiSession] QR Code فارغ لـ ${sessionConfig.userName}`);
-                    return;
-                }
-                
-                // 1. حفظ مباشر في التكوين
-                sessionConfig.qrCode = base64Qr;
-                sessionConfig.qrGeneratedAt = new Date().toISOString();
-                
-                // 2. تحديث في الذاكرة مباشرة
-                this.updateSessionConfig(sessionConfig.userId, { 
-                    qrCode: base64Qr,
-                    qrGeneratedAt: new Date().toISOString(),
-                    lastQRUpdate: Date.now()
-                });
-                
-                // 3. حفظ في ملف للعرض لاحقاً
-                this.saveQRImage(sessionConfig, base64Qr);
-                
-                // ⭐⭐⭐ الإضافة الجديدة: حفظ فوري للملف المؤقت ⭐⭐⭐
-                try {
-                    // حفظ في ملف مؤقت للوصول الفوري
-                    const tempQrFile = path.join(multiSessionsDir, `${sessionConfig.userId}_qr.json`);
-                    const tempData = {
-                        userId: sessionConfig.userId,
-                        userName: sessionConfig.userName,
+            const puppeteerOptions = await this.getPuppeteerOptions(sessionConfig.dir);
+            
+            const client = await wppconnect.create({
+                session: sessionConfig.sessionId,
+                puppeteerOptions: puppeteerOptions,
+                catchQR: (base64Qr, asciiQR) => {
+                    console.log(`✅ [MultiSession] QR Code جاهز لـ ${sessionConfig.userName}`);
+                    console.log(`📏 حجم QR Code: ${base64Qr ? base64Qr.length : 0} حرف`);
+                    
+                    if (!base64Qr) {
+                        console.error(`❌ [MultiSession] QR Code فارغ لـ ${sessionConfig.userName}`);
+                        return;
+                    }
+                    
+                    // 1. حفظ مباشر في التكوين
+                    sessionConfig.qrCode = base64Qr;
+                    sessionConfig.qrGeneratedAt = new Date().toISOString();
+                    
+                    // 2. تحديث في الذاكرة
+                    this.updateSessionConfig(sessionConfig.userId, { 
                         qrCode: base64Qr,
-                        sessionId: sessionConfig.sessionId,
-                        generatedAt: new Date().toISOString(),
-                        source: 'catchQR_callback'
-                    };
+                        qrGeneratedAt: new Date().toISOString(),
+                        lastQRUpdate: Date.now()
+                    });
                     
-                    fs.writeFileSync(tempQrFile, JSON.stringify(tempData, null, 2));
-                    console.log(`✅ [MultiSession] QR Code محفوظ في الملف المؤقت: ${tempQrFile}`);
+                    // 3. حفظ في ملف
+                    this.saveQRImage(sessionConfig, base64Qr);
                     
-                    // أيضاً حفظ في مجلد الجلسة
-                    const sessionQrFile = path.join(sessionConfig.dir, 'qr_latest.json');
-                    fs.writeFileSync(sessionQrFile, JSON.stringify(tempData, null, 2));
-                    
-                } catch (fileError) {
-                    console.log(`⚠️ [MultiSession] خطأ في حفظ الملف المؤقت:`, fileError.message);
-                }
-                
-                // ⭐⭐⭐ طباعة جزء من QR للتحقق ⭐⭐⭐
-                if (base64Qr.length > 50) {
-                    console.log(`🔗 [MultiSession] QR Code sample: ${base64Qr.substring(0, 50)}...`);
-                }
-            },
-            
-            // ⭐⭐⭐ إضافة onLoadingScreen لمعرفة متى يبدأ ⭐⭐⭐
-            onLoadingScreen: (percent) => {
-                if (percent === 100) {
-                    console.log(`📱 [MultiSession] جاهز لـ ${sessionConfig.userName} - بانتظار QR`);
-                }
-            },
-            
-            logQR: false, // تعطيل logs الطويلة
-            disableWelcome: true,
-            autoClose: 0,
-            createOptions: {
-                browserArgs: puppeteerOptions.args,
-                headless: puppeteerOptions.headless
-            }
-        });
+                    // 4. حفظ في ملف مؤقت للوصول الفوري
+                    try {
+                        const tempQrFile = path.join(multiSessionsDir, `${sessionConfig.userId}_qr.json`);
+                        const tempData = {
+                            userId: sessionConfig.userId,
+                            userName: sessionConfig.userName,
+                            qrCode: base64Qr,
+                            sessionId: sessionConfig.sessionId,
+                            generatedAt: new Date().toISOString()
+                        };
+                        
+                        fs.writeFileSync(tempQrFile, JSON.stringify(tempData, null, 2));
+                        console.log(`✅ [MultiSession] QR Code محفوظ في الملف المؤقت`);
+                        
+                    } catch (fileError) {
+                        console.log(`⚠️ [MultiSession] خطأ في حفظ الملف المؤقت:`, fileError.message);
+                    }
+                },
+                logQR: false,
+                disableWelcome: true,
+                autoClose: 0
+            });
 
-        // تحديث بيانات الجلسة
-        sessionConfig.client = client;
-        sessionConfig.connected = true;
-        sessionConfig.connectedAt = new Date().toISOString();
-        this.activeSessions.set(sessionConfig.sessionId, sessionConfig);
+            sessionConfig.client = client;
+            sessionConfig.connected = true;
+            sessionConfig.connectedAt = new Date().toISOString();
+            this.activeSessions.set(sessionConfig.sessionId, sessionConfig);
 
-        // إعداد معالج الرسائل لهذه الجلسة
-        this.setupSessionMessageHandler(client, sessionConfig);
+            this.setupSessionMessageHandler(client, sessionConfig);
 
-        console.log(`🎉 [MultiSession] جلسة ${sessionConfig.userName} تعمل بنجاح!`);
-        return { success: true, sessionConfig };
+            console.log(`🎉 [MultiSession] جلسة ${sessionConfig.userName} تعمل بنجاح!`);
+            return { success: true, sessionConfig };
 
-    } catch (error) {
-        console.error(`❌ [MultiSession] خطأ في بدء جلسة ${sessionConfig.userName}:`, error.message);
-        console.error(`🔍 [MultiSession] تفاصيل الخطأ:`, error);
-        
-        // محاولة Fallback
-        return await this.startSessionWithFallback(sessionConfig);
+        } catch (error) {
+            console.error(`❌ [MultiSession] خطأ في بدء جلسة ${sessionConfig.userName}:`, error.message);
+            return await this.startSessionWithFallback(sessionConfig);
+        }
     }
-}
-// حفظ صورة QR - محسنة
-saveQRImage(sessionConfig, base64Qr) {
-    try {
-        if (!base64Qr) {
-            console.log(`⚠️ [MultiSession] لا يوجد QR Code لحفظه لـ ${sessionConfig.userName}`);
-            return;
-        }
-        
-        // 1. حفظ كـ txt
-        const qrFile = path.join(sessionConfig.dir, 'qr_code.txt');
-        fs.writeFileSync(qrFile, base64Qr);
-        console.log(`✅ [MultiSession] QR محفوظ كـ txt: ${qrFile}`);
-        
-        // 2. حفظ كـ json (مع metadata)
-        const qrJsonFile = path.join(sessionConfig.dir, 'qr_info.json');
-        const qrInfo = {
-            userId: sessionConfig.userId,
-            userName: sessionConfig.userName,
-            sessionId: sessionConfig.sessionId,
-            qrCode: base64Qr,
-            timestamp: new Date().toISOString(),
-            savedAt: Date.now()
-        };
-        fs.writeFileSync(qrJsonFile, JSON.stringify(qrInfo, null, 2));
-        
-        // 3. حفظ كـ صورة png إذا كان base64 صحيح
-        if (base64Qr.startsWith('data:image/png;base64,')) {
-            const base64Data = base64Qr.replace(/^data:image\/png;base64,/, '');
-            const qrImageFile = path.join(sessionConfig.dir, 'qr_code.png');
-            fs.writeFileSync(qrImageFile, base64Data, 'base64');
-            console.log(`✅ [MultiSession] QR محفوظ كـ صورة: ${qrImageFile}`);
-        }
-        
-    } catch (error) {
-        console.log(`⚠️ [MultiSession] لا يمكن حفظ QR لـ ${sessionConfig.userName}:`, error.message);
-    }
-}
-// تحقق من وجود QR Code للجلسة
-checkSessionQR(userId) {
-    try {
-        const config = this.sessionConfigs.get(userId);
-        if (!config) {
-            return { exists: false, reason: 'التكوين غير موجود' };
-        }
-        
-        // التحقق من مصادر متعددة
-        const sources = [];
-        
-        // 1. في التكوين
-        if (config.qrCode) {
-            sources.push('config_memory');
-        }
-        
-        // 2. في ملف txt
-        const qrTxtFile = path.join(config.dir, 'qr_code.txt');
-        if (fs.existsSync(qrTxtFile)) {
-            sources.push('txt_file');
-        }
-        
-        // 3. في ملف json
-        const qrJsonFile = path.join(config.dir, 'qr_info.json');
-        if (fs.existsSync(qrJsonFile)) {
-            sources.push('json_file');
-        }
-        
-        // 4. في الملف المؤقت
-        const tempQrFile = path.join(multiSessionsDir, `${userId}_qr.json`);
-        if (fs.existsSync(tempQrFile)) {
-            sources.push('temp_file');
-        }
-        
-        return {
-            exists: sources.length > 0,
-            sources: sources,
-            configExists: !!config,
-            connected: config.connected || false,
-            userName: config.userName,
-            hasActiveSession: this.activeSessions.has(config.sessionId)
-        };
-        
-    } catch (error) {
-        return { exists: false, error: error.message };
-    }
-}
-    // ⭐ دالة Fallback للطوارئ
+
+    // ⭐ دالة Fallback
     async startSessionWithFallback(sessionConfig) {
         try {
-            console.log(`🔄 [MultiSession] محاولة Fallback لـ ${sessionConfig.userName}`);
+            console.log(`🔄 [MultiSession] محاولة Fallback`);
             
-            // استخدام chromium-browser الموجود عادة على Render
             const puppeteerOptions = {
                 headless: 'new',
                 args: [
@@ -486,7 +345,7 @@ checkSessionQR(userId) {
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage'
                 ],
-                executablePath: '/usr/bin/chromium-browser', // ⭐ هذا المفتاح
+                executablePath: '/usr/bin/chromium-browser',
                 userDataDir: sessionConfig.dir,
                 timeout: 30000
             };
@@ -495,7 +354,7 @@ checkSessionQR(userId) {
                 session: sessionConfig.sessionId,
                 puppeteerOptions: puppeteerOptions,
                 catchQR: (base64Qr) => {
-                    console.log(`✅ [MultiSession Fallback] QR Code جاهز لـ ${sessionConfig.userName}`);
+                    console.log(`✅ [MultiSession Fallback] QR Code جاهز`);
                     sessionConfig.qrCode = base64Qr;
                     this.saveQRImage(sessionConfig, base64Qr);
                 },
@@ -510,33 +369,100 @@ checkSessionQR(userId) {
             return { success: true, sessionConfig, mode: 'fallback' };
             
         } catch (fallbackError) {
-            console.error(`❌ [MultiSession] فشل Fallback أيضًا:`, fallbackError.message);
+            console.error(`❌ [MultiSession] فشل Fallback:`, fallbackError.message);
             return { 
                 success: false, 
-                error: fallbackError.message,
-                note: 'جرب استخدام الرابط /multi-sessions-basic للمحاولة البديلة'
+                error: fallbackError.message
             };
         }
     }
 
-    // إعداد معالج الرسائل للجلسة
+    // ⭐ دالة saveQRImage - خارج startSession
+    saveQRImage(sessionConfig, base64Qr) {
+        try {
+            if (!base64Qr) {
+                console.log(`⚠️ [MultiSession] لا يوجد QR Code`);
+                return;
+            }
+            
+            // حفظ كـ txt
+            const qrFile = path.join(sessionConfig.dir, 'qr_code.txt');
+            fs.writeFileSync(qrFile, base64Qr);
+            console.log(`✅ [MultiSession] QR محفوظ كـ txt`);
+            
+            // حفظ كـ json
+            const qrJsonFile = path.join(sessionConfig.dir, 'qr_info.json');
+            const qrInfo = {
+                userId: sessionConfig.userId,
+                userName: sessionConfig.userName,
+                sessionId: sessionConfig.sessionId,
+                qrCode: base64Qr,
+                timestamp: new Date().toISOString()
+            };
+            fs.writeFileSync(qrJsonFile, JSON.stringify(qrInfo, null, 2));
+            
+        } catch (error) {
+            console.log(`⚠️ [MultiSession] خطأ في حفظ QR:`, error.message);
+        }
+    }
+
+    // ⭐ دالة checkSessionQR - خارج startSession
+    checkSessionQR(userId) {
+        try {
+            const config = this.sessionConfigs.get(userId);
+            if (!config) {
+                return { exists: false, reason: 'التكوين غير موجود' };
+            }
+            
+            const sources = [];
+            
+            if (config.qrCode) {
+                sources.push('config_memory');
+            }
+            
+            const qrTxtFile = path.join(config.dir, 'qr_code.txt');
+            if (fs.existsSync(qrTxtFile)) {
+                sources.push('txt_file');
+            }
+            
+            const qrJsonFile = path.join(config.dir, 'qr_info.json');
+            if (fs.existsSync(qrJsonFile)) {
+                sources.push('json_file');
+            }
+            
+            const tempQrFile = path.join(multiSessionsDir, `${userId}_qr.json`);
+            if (fs.existsSync(tempQrFile)) {
+                sources.push('temp_file');
+            }
+            
+            return {
+                exists: sources.length > 0,
+                sources: sources,
+                configExists: true,
+                connected: config.connected || false,
+                userName: config.userName
+            };
+            
+        } catch (error) {
+            return { exists: false, error: error.message };
+        }
+    }
+
     setupSessionMessageHandler(client, sessionConfig) {
         client.onMessage(async (message) => {
             if (message.fromMe) return;
-
-            // تحديث وقت النشاط
+            
             sessionConfig.lastActive = Date.now();
             
             console.log(`📩 [${sessionConfig.userName}] رسالة من ${message.from.substring(0, 15)}...`);
 
             try {
-                // استخدام النظام الحالي لمعالجة الرسائل
                 const response = await processUserInput(
                     message.from,
                     message.notifyName || 'عميل',
                     message.body || '',
                     client,
-                    sessionConfig // تمرير تكوين الجلسة
+                    sessionConfig
                 );
 
                 if (response) {
@@ -548,14 +474,12 @@ checkSessionQR(userId) {
             }
         });
 
-        // مراقبة حالة الجلسة
         client.onStateChange((state) => {
             console.log(`🔋 [${sessionConfig.userName}] حالة: ${state}`);
             sessionConfig.state = state;
         });
     }
 
-    // إرسال رسالة ترحيب عند الاتصال
     async sendWelcomeMessage(client, sessionConfig) {
         try {
             const welcomeMsg = `🎉 *تم توصيل البوت بنجاح!*\n\n` +
@@ -566,28 +490,10 @@ checkSessionQR(userId) {
 
             await client.sendText(client.info.wid._serialized, welcomeMsg);
         } catch (error) {
-            console.log(`⚠️ [${sessionConfig.userName}] لا يمكن إرسال رسالة الترحيب`);
+            console.log(`⚠️ لا يمكن إرسال رسالة الترحيب`);
         }
     }
 
-    // حفظ صورة QR
-    saveQRImage(sessionConfig, base64Qr) {
-        try {
-            const qrFile = path.join(sessionConfig.dir, 'qr_code.txt');
-            fs.writeFileSync(qrFile, base64Qr);
-            
-            // أيضاً حفظ كصورة
-            const qrImageFile = path.join(sessionConfig.dir, 'qr_code.png');
-            if (base64Qr.startsWith('data:image')) {
-                const base64Data = base64Qr.replace(/^data:image\/png;base64,/, '');
-                fs.writeFileSync(qrImageFile, base64Data, 'base64');
-            }
-        } catch (error) {
-            console.log(`⚠️ لا يمكن حفظ QR لـ ${sessionConfig.userName}`);
-        }
-    }
-
-    // الإعدادات الافتراضية لكل جلسة
     getDefaultSessionSettings(userName) {
         return {
             companyName: `${userName} للتقنية`,
@@ -601,7 +507,6 @@ checkSessionQR(userId) {
         };
     }
 
-    // الردود الافتراضية لكل جلسة
     getDefaultSessionReplies(userName) {
         return {
             menus: {
@@ -614,7 +519,6 @@ checkSessionQR(userId) {
                      `5️⃣ تواصل المبيعات\n` +
                      `6️⃣ الإبلاغ عن مشكلة\n\n` +
                      `📝 أرسل رقم الخدمة`,
-                
                 accounting: `📊 *الأنظمة المحاسبية*\n\nاختر النظام:\n1️⃣ نظام محاسبي متكامل\n2️⃣ نظام فواتير\n0️⃣ رجوع`
             },
             quickReplies: {
@@ -624,7 +528,6 @@ checkSessionQR(userId) {
         };
     }
 
-    // تحديث تكوين الجلسة
     updateSessionConfig(userId, updates) {
         const config = this.sessionConfigs.get(userId);
         if (config) {
@@ -634,7 +537,6 @@ checkSessionQR(userId) {
         }
     }
 
-    // الحصول على جلسة مستخدم
     getUserSession(userId) {
         for (let session of this.activeSessions.values()) {
             if (session.userId === userId) {
@@ -644,7 +546,6 @@ checkSessionQR(userId) {
         return null;
     }
 
-    // الحصول على جميع الجلسات النشطة
     getActiveSessionsInfo() {
         return Array.from(this.activeSessions.values()).map(session => ({
             sessionId: session.sessionId,
@@ -657,24 +558,22 @@ checkSessionQR(userId) {
         }));
     }
 
-    // إيقاف جلسة
     async stopSession(sessionId) {
         const session = this.activeSessions.get(sessionId);
         if (session && session.client) {
             try {
                 await session.client.close();
-                console.log(`🛑 [MultiSession] إيقاف جلسة ${session.userName}`);
+                console.log(`🛑 إيقاف جلسة ${session.userName}`);
             } catch (error) {
-                console.error(`❌ [MultiSession] خطأ في إيقاف الجلسة:`, error);
+                console.error(`❌ خطأ في إيقاف الجلسة:`, error);
             }
         }
         this.activeSessions.delete(sessionId);
     }
 
-    // ⭐ دالة جديدة: تشغيل جميع الجلسات المحفوظة
     async startAllSavedSessions() {
         const configs = Array.from(this.sessionConfigs.values());
-        console.log(`🔄 [MultiSession] محاولة تشغيل ${configs.length} جلسة محفوظة`);
+        console.log(`🔄 محاولة تشغيل ${configs.length} جلسة`);
         
         let started = 0;
         for (const config of configs.slice(0, this.maxSessions)) {
@@ -683,15 +582,11 @@ checkSessionQR(userId) {
                     const result = await this.startSession(config);
                     if (result.success) {
                         started++;
-                        console.log(`✅ [MultiSession] بدأت جلسة ${config.userName}`);
-                        
-                        // انتظار بين الجلسات
-                        if (started < configs.length) {
-                            await new Promise(resolve => setTimeout(resolve, 3000));
-                        }
+                        console.log(`✅ بدأت جلسة ${config.userName}`);
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                     }
                 } catch (error) {
-                    console.error(`❌ [MultiSession] فشل بدء جلسة ${config.userName}:`, error.message);
+                    console.error(`❌ فشل بدء جلسة ${config.userName}:`, error.message);
                 }
             }
         }
@@ -700,7 +595,7 @@ checkSessionQR(userId) {
     }
 }
 
-// ⭐ إنشاء مدير الجلسات المتعددة
+// إنشاء المدير
 const multiSessionManager = new MultiSessionManager(3);
 // ⭐ تعديل دالة processUserInput لدعم الجلسات المتعددة
 async function processUserInput(userId, userName, text, client, sessionConfig = null) {
@@ -4142,6 +4037,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
