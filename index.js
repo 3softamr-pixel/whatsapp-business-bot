@@ -2036,12 +2036,11 @@ app.get('/start-session/:userId', async (req, res) => {
                 }
                 
                 if (qrCode) {
-                    qrHtml = \`
-                    <h2>✅ QR Code جاهز!</h2>
-                    <img src="\${qrCode}" style="max-width: 300px; border: 2px solid #25D366; border-radius: 10px;">
-                    <p>امسح هذا الكود بواسطة WhatsApp</p>
-                    \`;
-                }
+                     qrHtml = 
+                    `<h2>✅ QR Code جاهز!</h2>
+                    <img src="${qrCode}" style="max-width: 300px; border: 2px solid #25D366; border-radius: 10px;">
+                  <p>امسح هذا الكود بواسطة WhatsApp</p>`;
+               }    
             }
             
             res.send(`
@@ -4689,6 +4688,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
