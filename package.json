@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "install-chromium": "node node_modules/@sparticuz/chromium/bin/install.js"
   },
   "engines": {
