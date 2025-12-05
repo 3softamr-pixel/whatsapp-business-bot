@@ -2064,15 +2064,14 @@ app.get('/start-session/:userId', async (req, res) => {
                     <p><strong>⏰ وقت البدء:</strong> ${new Date().toLocaleString('ar-SA')}</p>
                 </div>
                 
-                ${qrHtml || \`
-                <div class="info">
-                    <h3>⏳ جاري إنشاء QR Code...</h3>
-                    <p>يرجى الانتظار 15-30 ثانية</p>
-                    <button onclick="window.location.reload()" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 5px;">
-                        🔄 تحديث الصفحة
-                    </button>
-                </div>
-                \`}
+            ${qrHtml || 
+"<div class='info'>" +
+"<h3>⏳ جاري إنشاء QR Code...</h3>" +
+"<p>يرجى الانتظار 15-30 ثانية</p>" +
+"<button onclick=\"window.location.reload()\" style=\"padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 5px;\">" +
+"🔄 تحديث الصفحة" +
+"</button>" +
+"</div>"}
                 
                 <div style="margin-top: 30px;">
                     <a href="/multi-sessions" style="padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
@@ -4688,6 +4687,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
