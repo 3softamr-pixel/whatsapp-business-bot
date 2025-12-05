@@ -1,12 +1,26 @@
 const express = require('express');
 const http = require('http');
+
+
+
 const wppconnect = require('@wppconnect-team/wppconnect');
+const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+// ⭐ التعديل الأساسي: إضافة استيراد المكتبة
+const chromium = require('@sparticuz/chromium');
 
+// ⭐ إعادة تكوين puppeteerConfig بشكل كامل
+const puppeteerConfig = {
+    headless: true,
+    args: chromium.args,
+    executablePath: process.env.CHROMIUM_PATH || await chromium.executablePath(),
+    ignoreDefaultArgs: ['--disable-extensions'],
+    userDataDir: './user_data'
+};
 // إعداد Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -2289,89 +2303,141 @@ app.get('/', (req, res) => {
 });
 
 // تشغيل البوت مع إدارة الجلسات
+
+
+// التحقق من النظام
+console.log('System info:', {
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    puppeteerExecutable: process.env.PUPPETEER_EXECUTABLE_PATH,
+    chromiumPath: process.env.CHROMIUM_PATH
+});
+
+// تهيئة إعدادات Puppeteer المتوافقة مع Render
+async function getPuppeteerConfig() {
+    let executablePath;
+    
+    // المحاولة مع @sparticuz/chromium أولاً
+    try {
+        const chromium = require('@sparticuz/chromium');
+        executablePath = await chromium.executablePath();
+        console.log('✅ Using @sparticuz/chromium path:', executablePath);
+    } catch (error) {
+        console.log('⚠️ @sparticuz/chromium not available, trying alternatives');
+        
+        // البحث عن chromium في المسارات الشائعة
+        const possiblePaths = [
+            process.env.PUPPETEER_EXECUTABLE_PATH,
+            process.env.CHROMIUM_PATH,
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/google-chrome',
+            './node_modules/puppeteer/.local-chromium/**/chrome-linux/chrome'
+        ].filter(Boolean);
+        
+        for (const path of possiblePaths) {
+            if (fs.existsSync(path)) {
+                executablePath = path;
+                console.log('✅ Found Chrome at:', path);
+                break;
+            }
+        }
+    }
+    
+    return {
+        headless: 'new',
+        executablePath: executablePath || undefined,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-web-security',
+            '--disable-features=site-per-process'
+        ],
+        userDataDir: './user_data',
+        timeout: 60000
+    };
+}
+
+// تحديث دالة initializeBot
 async function initializeBot() {
     try {
-        const client = await wppconnect.create({
+        console.log('🔄 Initializing bot with Render-compatible settings...');
+        
+        const puppeteerConfig = await getPuppeteerConfig();
+        console.log('📋 Puppeteer config:', JSON.stringify(puppeteerConfig, null, 2));
+        
+        wppconnect.create({
             session: 'EnhancedMultiLevelBot',
-
-            // منع استخدام Google Chrome
-            useChrome: false,
-
-            // Puppeteer يستخدم Chromium الافتراضي
-            puppeteerOptions: {
-                headless: true,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--disable-infobars',
-                    '--no-zygote',
-                    '--single-process',
-                    '--remote-debugging-port=9222'
-                ]
+            puppeteerOptions: puppeteerConfig,
+            catchQR: (base64Qr) => {
+                console.log('✅ QR Code جاهز');
+                botState.qrCode = base64Qr;
+                saveQRCode(base64Qr); // حفظ QR للعرض في الواجهة
             },
-
-            catchQR: (base64QR, asciiQR) => {
-                console.log("======= QR CODE =======");
-                console.log(asciiQR); // عرض ASCII QR في console
-                console.log("========================");
-                botState.qrCode = base64QR; // حفظ QR كـ base64
-            }
-        });
-
-        console.log('✅ البوت المتطور جاهز للعمل!');
-        botState.client = client;
-        botState.isConnected = true;
-
-        // تنظيف الجلسات المنتهية كل 5 دقائق
-        setInterval(() => sessionManager.cleanupExpiredSessions(), 5 * 60 * 1000);
-
-        // الاستماع للرسائل الواردة
-        client.onMessage(async message => {
-            if (message.fromMe) return;
-
-            if (!settings.autoReply) {
-                console.log('📩 رسالة (الرد التلقائي معطل):', message.body);
-                return;
-            }
-
-            // نظام التصفية الذكي
-            if (settings.advancedFilters?.enableContactFilter) {
-                const shouldReply = await smartFilter.shouldReply(message, client);
-                if (!shouldReply) {
-                    console.log('🚫 تم تصفية الرسالة من:', message.from, '- المحتوى:', message.body?.substring(0, 50));
+            logQR: false,
+            disableWelcome: true
+        })
+        .then(client => {
+            console.log('✅ البوت المتطور جاهز للعمل!');
+            botState.client = client;
+            botState.isConnected = true;
+            
+            // تنظيف الجلسات المنتهية
+            setInterval(() => sessionManager.cleanupExpiredSessions(), 5 * 60 * 1000);
+            
+            // معالجة الرسائل
+            client.onMessage(async message => {
+                if (message.fromMe) return;
+                
+                if (!settings.autoReply) {
+                    console.log('📩 رسالة (الرد التلقائي معطل):', message.body);
                     return;
                 }
-            }
-
-            try {
-                const response = await processUserInput(
-                    message.from,
-                    message.notifyName || 'عميل',
-                    message.body,
-                    client
-                );
-
-                if (response) {
-                    await client.sendText(message.from, response);
-                    console.log('🤖 تم الرد على:', message.from);
-
-                    // إضافة الرقم لقائمة المعرفة بعد الرد
-                    if (settings.advancedFilters?.enableContactFilter) {
-                        smartFilter.addKnownContact(message.from);
-                    }
+                
+                // التصفية الذكية
+                if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
+                    const shouldReply = await smartFilter.shouldReply(message, client);
+                    if (!shouldReply) return;
                 }
-            } catch (error) {
-                console.error('❌ خطأ في معالجة الرسالة:', error);
-            }
+                
+                try {
+                    const response = await processUserInput(
+                        message.from, 
+                        message.notifyName || 'عميل', 
+                        message.body, 
+                        client
+                    );
+                    
+                    if (response) {
+                        await client.sendText(message.from, response);
+                        console.log('🤖 تم الرد على:', message.from);
+                        
+                        if (settings.advancedFilters && settings.advancedFilters.enableContactFilter) {
+                            smartFilter.addKnownContact(message.from);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ خطأ في معالجة الرسالة:', error);
+                }
+            });
+            
+        })
+        .catch(err => {
+            console.error('❌ خطأ في البوت:', err);
+            // إعادة المحاولة بعد تأخير
+            setTimeout(initializeBot, 10000);
         });
-
-    } catch (err) {
-        console.error('❌ خطأ في البوت:', err);
-
-        // إعادة المحاولة بعد 10 ثوانٍ إذا حدث خطأ
-        setTimeout(initializeBot, 10000);
+        
+    } catch (error) {
+        console.error('❌ خطأ في تهيئة البوت:', error);
     }
 }
 
@@ -2383,6 +2449,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
