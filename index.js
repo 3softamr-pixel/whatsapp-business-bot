@@ -763,7 +763,7 @@ app.get('/multi-sessions', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🎪 نظام الجلسات المتعددة - ${customReplies.companyName}</title>
+        <title>🎪 نظام الجلسات المتعددة</title>
         <style>
             :root {
                 --primary-color: #25D366;
@@ -1026,120 +1026,36 @@ app.get('/multi-sessions', (req, res) => {
                     </button>
                 </div>
             </div>
+            
+            <!-- قسم الأدوات المتقدمة -->
+            <div style="margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                <h3>🔧 أدوات متقدمة</h3>
+                
+                <div style="margin: 15px 0;">
+                    <label>🔍 التحقق من جلسة معينة:</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="verifyUserId" placeholder="أدخل رقم الجلسة" style="flex: 1;">
+                        <button onclick="verifySpecificSession()" style="background: #17a2b8;">
+                            تحقق
+                        </button>
+                    </div>
+                    <div id="verificationResult" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                    <a href="/api/multi-sessions" target="_blank" style="padding: 10px; background: #28a745; color: white; text-align: center; border-radius: 8px; text-decoration: none;">
+                        📊 حالة جميع الجلسات
+                    </a>
+                    <button onclick="forceRefreshAll()" style="padding: 10px; background: #ffc107; color: #333; border-radius: 8px; border: none;">
+                        🔄 إعادة تحميل الكل
+                    </button>
+                    <button onclick="showSystemInfo()" style="padding: 10px; background: #6c757d; color: white; border-radius: 8px; border: none;">
+                        ℹ️ معلومات النظام
+                    </button>
+                </div>
+            </div>
         </div>
-        // بعد عرض الجلسات في الصفحة
-<div style="margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px;">
-    <h3>🔧 أدوات متقدمة</h3>
-    
-    <!-- حقل للتحقق من أي جلسة -->
-    <div style="margin: 15px 0;">
-        <label>🔍 التحقق من جلسة معينة:</label>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <input type="text" id="verifyUserId" placeholder="أدخل رقم الجلسة" style="flex: 1;">
-            <button onclick="verifySpecificSession()" style="background: #17a2b8;">
-                تحقق
-            </button>
-        </div>
-        <div id="verificationResult" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;"></div>
-    </div>
-    
-    <!-- روابط سريعة -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
-        <a href="/api/multi-sessions" target="_blank" style="padding: 10px; background: #28a745; color: white; text-align: center; border-radius: 8px; text-decoration: none;">
-            📊 حالة جميع الجلسات
-        </a>
-        <button onclick="forceRefreshAll()" style="padding: 10px; background: #ffc107; color: #333; border-radius: 8px; border: none;">
-            🔄 إعادة تحميل الكل
-        </button>
-        <button onclick="showSystemInfo()" style="padding: 10px; background: #6c757d; color: white; border-radius: 8px; border: none;">
-            ℹ️ معلومات النظام
-        </button>
-    </div>
-</div>
-
-<script>
-// دالة التحقق من جلسة محددة
-async function verifySpecificSession() {
-    const userId = document.getElementById('verifyUserId').value.trim();
-    if (!userId) {
-        alert('الرجاء إدخال رقم الجلسة');
-        return;
-    }
-    
-    await verifySessionQR(userId);
-}
-
-// دالة إعادة تحميل جميع الجلسات
-async function forceRefreshAll() {
-    if (confirm('هل تريد إعادة تحميل جميع الجلسات؟')) {
-        try {
-            const response = await fetch('/api/multi-sessions/refresh-all', {
-                method: 'POST'
-            });
-            const result = await response.json();
-            alert(result.message || '✅ تم إعادة التحميل');
-            setTimeout(() => location.reload(), 2000);
-        } catch (error) {
-            alert('❌ خطأ: ' + error.message);
-        }
-    }
-}
-
-// دالة عرض معلومات النظام
-async function showSystemInfo() {
-    try {
-        const response = await fetch('/api/system-info');
-        const data = await response.json();
         
-        let info = '🖥️ معلومات النظام:\n\n';
-        info += `📊 نظام التشغيل: ${data.platform}\n`;
-        info += `⚙️ المعمارية: ${data.arch}\n`;
-        info += `📁 مجلد الجلسات: ${data.multiSessionsDir}\n`;
-        info += `🔢 عدد الجلسات: ${data.sessionCount}\n`;
-        info += `⏰ وقت التشغيل: ${data.uptime} ثانية`;
-        
-        alert(info);
-    } catch (error) {
-        alert('❌ لا يمكن تحميل معلومات النظام');
-    }
-}
-
-// أضف هذا API endpoint
-app.get('/api/system-info', (req, res) => {
-    res.json({
-        platform: process.platform,
-        arch: process.arch,
-        nodeVersion: process.version,
-        multiSessionsDir: multiSessionsDir,
-        sessionCount: multiSessionManager.sessionConfigs.size,
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
-});
-
-// API endpoint لإعادة التحميل
-app.post('/api/multi-sessions/refresh-all', async (req, res) => {
-    try {
-        const configs = Array.from(multiSessionManager.sessionConfigs.values());
-        let refreshed = 0;
-        
-        for (const config of configs) {
-            if (config.connected) {
-                await multiSessionManager.stopSession(config.sessionId);
-                refreshed++;
-            }
-        }
-        
-        res.json({
-            success: true,
-            message: `تم إعادة تحميل ${refreshed} جلسة`,
-            refreshed
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-</script>
         <script>
             // تحميل الإحصائيات الأولية
             async function loadStats() {
@@ -1170,7 +1086,6 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                     return;
                 }
                 
-                // تحقق من تنسيق رقم الهاتف
                 if (!userId.match(/^[0-9]{10,15}$/)) {
                     alert('❌ رقم الهاتف غير صالح. يرجى إدخال 10-15 رقم');
                     return;
@@ -1184,7 +1099,7 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                             userName, 
                             userId,
                             customSettings: {
-                                companyName: \`\${userName} للتقنية\`,
+                                companyName: userName + ' للتقنية',
                                 autoReply: true,
                                 enableImages: true
                             }
@@ -1195,20 +1110,17 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                     
                     if (result.success) {
                         alert('✅ ' + result.message);
-                        // تفريغ الحقول
                         document.getElementById('newSessionUserName').value = '';
                         document.getElementById('newSessionUserId').value = '';
                         
-                        // تحديث القائمة والإحصائيات
                         loadMultiSessions();
                         loadStats();
                         
-                        // عرض QR Code بعد ثانية
                         setTimeout(() => {
                             showSessionQR(userId, userName);
                         }, 1000);
                     } else {
-                        alert('❌ ' + (result.error || 'حدث خطأ غير معروف'));
+                        alert('❌ ' + (result.error || 'حدث خطأ'));
                     }
                 } catch (error) {
                     alert('❌ خطأ في الاتصال: ' + error.message);
@@ -1247,14 +1159,6 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                                             style="padding: 5px 10px; font-size: 0.9em; background: #17a2b8; width: auto;">
                                         📱 QR Code
                                     </button>
-                                    <button onclick="sendTestMessage('\${session.userId}')" 
-                                            style="padding: 5px 10px; font-size: 0.9em; background: #28a745; width: auto;">
-                                        ✉️ رسالة تجريبية
-                                    </button>
-                                    <button onclick="stopSession('\${session.userId}')" 
-                                            style="padding: 5px 10px; font-size: 0.9em; background: #dc3545; width: auto;">
-                                        ⏹️ إيقاف
-                                    </button>
                                 </div>
                             </div>
                             \`;
@@ -1292,14 +1196,13 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                             \`<img src="\${data.qrCode}" style="max-width: 300px; border: 2px solid #ddd; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">\`;
                         
                         document.getElementById('qrSessionInfo').innerHTML = 
-                            \`<strong>\${userName || data.userName || 'مستخدم'}</strong> - \${data.sessionId?.substring(0, 8) || ''}\`;
+                            \`<strong>\${userName || data.userName || 'مستخدم'}</strong>\`;
                         
                         document.getElementById('sessionQRContainer').style.display = 'block';
                         
-                        // تمرير إلى أعلى
                         document.getElementById('sessionQRContainer').scrollIntoView({ behavior: 'smooth' });
                     } else {
-                        alert('❌ لا يوجد QR Code للجلسة. قد تكون الجلسة غير نشطة أو لم يتم إنشاؤها بعد.');
+                        alert('❌ لا يوجد QR Code للجلسة');
                     }
                 } catch (error) {
                     alert('❌ خطأ في الحصول على QR Code: ' + error.message);
@@ -1311,46 +1214,33 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                 document.getElementById('sessionQRContainer').style.display = 'none';
             }
             
-            // إرسال رسالة تجريبية
-            async function sendTestMessage(userId) {
-                const message = prompt('أدخل الرسالة التجريبية:', 'مرحباً! هذه رسالة تجريبية من نظام الجلسات المتعددة.');
-                
-                if (message) {
-                    try {
-                        const response = await fetch(\`/api/multi-sessions/\${userId}/send\`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                to: userId,
-                                message: message + '\\n\\n🕐 ' + new Date().toLocaleString('ar-SA')
-                            })
-                        });
-                        
-                        const result = await response.json();
-                        alert(result.success ? '✅ تم إرسال الرسالة' : '❌ ' + result.error);
-                    } catch (error) {
-                        alert('❌ خطأ في إرسال الرسالة: ' + error.message);
-                    }
+            // دالة التحقق من جلسة محددة
+            async function verifySpecificSession() {
+                const userId = document.getElementById('verifyUserId').value.trim();
+                if (!userId) {
+                    alert('الرجاء إدخال رقم الجلسة');
+                    return;
                 }
-            }
-            
-            // إيقاف جلسة
-            async function stopSession(userId) {
-                if (confirm('هل أنت متأكد من إيقاف هذه الجلسة؟')) {
-                    try {
-                        const response = await fetch(\`/api/multi-sessions/\${userId}/stop\`, {
-                            method: 'POST'
-                        });
-                        
-                        const result = await response.json();
-                        if (result.success) {
-                            alert('✅ تم إيقاف الجلسة');
-                            loadMultiSessions();
-                            loadStats();
-                        }
-                    } catch (error) {
-                        alert('❌ خطأ في إيقاف الجلسة: ' + error.message);
+                
+                try {
+                    const response = await fetch(\`/api/multi-sessions/\${userId}/verify\`);
+                    const data = await response.json();
+                    
+                    let message = \`🔍 نتيجة التحقق للجلسة \${userId}:\n\n\`;
+                    message += \`✅ QR Code موجود: \${data.exists ? 'نعم' : 'لا'}\n\`;
+                    message += \`📁 مصادر التخزين: \${data.sources?.join(', ') || 'لا يوجد'}\n\`;
+                    message += \`👤 اسم المستخدم: \${data.userName || 'غير معروف'}\n\`;
+                    
+                    const resultDiv = document.getElementById('verificationResult');
+                    if (resultDiv) {
+                        resultDiv.innerHTML = message;
+                        resultDiv.style.display = 'block';
+                    } else {
+                        alert(message);
                     }
+                    
+                } catch (error) {
+                    alert('❌ خطأ في التحقق: ' + error.message);
                 }
             }
             
@@ -1393,7 +1283,22 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
             }
             
             // تنظيف الجلسات القديمة
-           
+            async function cleanupOldSessions() {
+                if (confirm('هل تريد تنظيف جميع الجلسات الأقدم من أسبوع؟')) {
+                    try {
+                        const response = await fetch('/api/multi-sessions/cleanup', {
+                            method: 'POST'
+                        });
+                        
+                        const result = await response.json();
+                        alert(result.message || '✅ تم التنظيف');
+                        loadMultiSessions();
+                        loadStats();
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
             
             // تصدير بيانات الجلسات
             async function exportSessionsData() {
@@ -1417,7 +1322,7 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
             
             // إعادة تشغيل جميع الجلسات
             async function refreshAllSessions() {
-                if (confirm('هل تريد إعادة تشغيل جميع الجلسات؟ هذا قد يستغرق بعض الوقت.')) {
+                if (confirm('هل تريد إعادة تشغيل جميع الجلسات؟')) {
                     try {
                         await stopAllSessions();
                         setTimeout(async () => {
@@ -1429,18 +1334,49 @@ app.post('/api/multi-sessions/refresh-all', async (req, res) => {
                 }
             }
             
-            // التحميل الأولي للصفحة
+            // إعادة تحميل جميع الجلسات
+            async function forceRefreshAll() {
+                if (confirm('هل تريد إعادة تحميل جميع الجلسات؟')) {
+                    try {
+                        const response = await fetch('/api/multi-sessions/refresh-all', {
+                            method: 'POST'
+                        });
+                        const result = await response.json();
+                        alert(result.message || '✅ تم التحديث');
+                        setTimeout(() => location.reload(), 2000);
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
+            
+            // معلومات النظام
+            async function showSystemInfo() {
+                try {
+                    const response = await fetch('/api/system-info');
+                    const data = await response.json();
+                    
+                    let info = '🖥️ معلومات النظام:\\n\\n';
+                    info += \`📊 نظام التشغيل: \${data.platform}\\n\`;
+                    info += \`🔢 عدد الجلسات: \${data.sessionCount}\\n\`;
+                    info += \`⏰ وقت التشغيل: \${Math.floor(data.uptime)} ثانية\`;
+                    
+                    alert(info);
+                } catch (error) {
+                    alert('❌ لا يمكن تحميل المعلومات');
+                }
+            }
+            
+            // التحميل الأولي
             document.addEventListener('DOMContentLoaded', () => {
                 loadStats();
                 loadMultiSessions();
                 
-                // تحديث تلقائي كل 10 ثواني
                 setInterval(() => {
                     loadMultiSessions();
                     loadStats();
                 }, 10000);
                 
-                // تفعيل إدخال Enter
                 document.getElementById('newSessionUserId').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         createMultiSession();
@@ -4037,6 +3973,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
