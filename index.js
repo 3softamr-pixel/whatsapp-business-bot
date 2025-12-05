@@ -764,6 +764,8 @@ app.get('/multi-sessions', (req, res) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>🎪 نظام الجلسات المتعددة</title>
+
+        
         <style>
             :root {
                 --primary-color: #25D366;
@@ -1159,9 +1161,17 @@ app.get('/multi-sessions', (req, res) => {
                                             style="padding: 5px 10px; font-size: 0.9em; background: #17a2b8; width: auto;">
                                         📱 QR Code
                                     </button>
+
+                                    <button onclick="startSessionNow('\${session.userId}')" 
+                                            style="padding: 5px 10px; font-size: 0.9em; background: #28a745; width: auto;">
+                                        ▶️ بدء الجلسة
+                                    </button>
                                 </div>
                             </div>
                             \`;
+
+                            // في دالة loadMultiSessions، أضف هذا الزر:
+
                         });
                     } else {
                         html = \`
@@ -1171,6 +1181,7 @@ app.get('/multi-sessions', (req, res) => {
                             <p>قم بإنشاء جلسة جديدة لبدء الاستخدام</p>
                         </div>
                         \`;
+                        
                     }
                     
                     document.getElementById('multiSessionsList').innerHTML = html;
@@ -1319,7 +1330,32 @@ app.get('/multi-sessions', (req, res) => {
                     alert('❌ خطأ في التصدير: ' + error.message);
                 }
             }
+            // بدء جلسة يدوياً
+        async function startSessionNow(userId) {
+             try {
+                 const response = await fetch(\`/api/multi-sessions/\${userId}/start-now\`, {
+                 method: 'POST'
+                });
+        
+                const result = await response.json();
+        
+                if (result.success) {
+                      alert('✅ ' + result.message);
             
+            // انتظار ثم تحديث
+                      setTimeout(() => {
+                      loadMultiSessions();
+                      loadStats();
+                      alert('⏳ انتظر 15-30 ثانية ثم اضغط على 📱 QR Code');
+                      }, 2000);
+            
+                } else {
+                    alert('❌ ' + result.error);
+          }
+    } catch (error) {
+        alert('❌ خطأ: ' + error.message);
+    }
+}
             // إعادة تشغيل جميع الجلسات
             async function refreshAllSessions() {
                 if (confirm('هل تريد إعادة تشغيل جميع الجلسات؟')) {
@@ -1390,7 +1426,168 @@ app.get('/multi-sessions', (req, res) => {
 });
 
 // ============== إضافة APIs جديدة لدعم الصفحة المنفصلة ==============
+// بدء جلسة موجودة
+app.post('/api/multi-sessions/:userId/start-now', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const config = multiSessionManager.sessionConfigs.get(userId);
+        
+        if (!config) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'الجلسة غير موجودة' 
+            });
+        }
+        
+        console.log(`🚀 بدء يدوي للجلسة ${config.userName}`);
+        
+        const startResult = await multiSessionManager.startSession(config);
+        
+        if (startResult.success) {
+            // انتظار لإنشاء QR Code
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            const qrCheck = multiSessionManager.checkSessionQR(userId);
+            
+            res.json({
+                success: true,
+                message: `✅ بدأت جلسة ${config.userName}`,
+                qrAvailable: qrCheck.exists,
+                note: qrCheck.exists ? 
+                    'QR Code جاهز الآن' :
+                    'انتظر 10-30 ثانية ثم حاول مجدداً'
+            });
+        } else {
+            res.json({
+                success: false,
+                error: startResult.error,
+                note: 'جرب الطريقة البديلة Fallback'
+            });
+        }
+        
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
 
+
+// صفحة مباشرة لبدء الجلسة وعرض QR
+app.get('/start-session/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const config = multiSessionManager.sessionConfigs.get(userId);
+        
+        if (!config) {
+            return res.send(`
+            <html>
+            <body style="text-align: center; padding: 50px;">
+                <h1>❌ الجلسة غير موجودة</h1>
+                <p>رقم الجلسة: ${userId}</p>
+                <a href="/multi-sessions">العودة</a>
+            </body>
+            </html>
+            `);
+        }
+        
+        // محاولة بدء الجلسة
+        const startResult = await multiSessionManager.startSession(config);
+        
+        if (startResult.success) {
+            // انتظار 5 ثواني
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            // التحقق من QR Code
+            const qrCheck = multiSessionManager.checkSessionQR(userId);
+            
+            let qrHtml = '';
+            if (qrCheck.exists) {
+                // قراءة QR Code من الملف
+                let qrCode = null;
+                const qrFile = path.join(config.dir, 'qr_code.txt');
+                
+                if (fs.existsSync(qrFile)) {
+                    qrCode = fs.readFileSync(qrFile, 'utf8');
+                } else if (config.qrCode) {
+                    qrCode = config.qrCode;
+                }
+                
+                if (qrCode) {
+                    qrHtml = \`
+                    <h2>✅ QR Code جاهز!</h2>
+                    <img src="\${qrCode}" style="max-width: 300px; border: 2px solid #25D366; border-radius: 10px;">
+                    <p>امسح هذا الكود بواسطة WhatsApp</p>
+                    \`;
+                }
+            }
+            
+            res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>بدء جلسة ${config.userName}</title>
+                <style>
+                    body { text-align: center; padding: 50px; font-family: Arial; }
+                    .success { color: #28a745; }
+                    .info { background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px; }
+                </style>
+            </head>
+            <body>
+                <h1 class="success">✅ بدأت جلسة ${config.userName}</h1>
+                
+                <div class="info">
+                    <p><strong>👤 المستخدم:</strong> ${config.userName}</p>
+                    <p><strong>📱 الرقم:</strong> ${userId}</p>
+                    <p><strong>🆔 كود الجلسة:</strong> ${config.sessionId}</p>
+                    <p><strong>⏰ وقت البدء:</strong> ${new Date().toLocaleString('ar-SA')}</p>
+                </div>
+                
+                ${qrHtml || \`
+                <div class="info">
+                    <h3>⏳ جاري إنشاء QR Code...</h3>
+                    <p>يرجى الانتظار 15-30 ثانية</p>
+                    <button onclick="window.location.reload()" style="padding: 10px 20px; background: #25D366; color: white; border: none; border-radius: 5px;">
+                        🔄 تحديث الصفحة
+                    </button>
+                </div>
+                \`}
+                
+                <div style="margin-top: 30px;">
+                    <a href="/multi-sessions" style="padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
+                        العودة للصفحة الرئيسية
+                    </a>
+                </div>
+                
+                <script>
+                    // تحديث تلقائي بعد 30 ثانية
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 30000);
+                </script>
+            </body>
+            </html>
+            `);
+            
+        } else {
+            res.send(`
+            <html>
+            <body style="text-align: center; padding: 50px;">
+                <h1>❌ فشل بدء الجلسة</h1>
+                <p>${startResult.error || 'خطأ غير معروف'}</p>
+                <a href="/multi-sessions">العودة</a>
+            </body>
+            </html>
+            `);
+        }
+        
+    } catch (error) {
+        res.send(`<h1>خطأ: ${error.message}</h1>`);
+    }
+});
 // 6. إيقاف جلسة معينة
 app.post('/api/multi-sessions/:userId/stop', async (req, res) => {
     const { userId } = req.params;
@@ -3973,6 +4170,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
