@@ -100,6 +100,43 @@ cleanupChromiumFiles();
 
 
 
+function cleanupOldSessions() {
+    try {
+        if (!fs.existsSync(multiSessionsDir)) {
+            fs.mkdirSync(multiSessionsDir, { recursive: true });
+            return;
+        }
+        
+        const dirs = fs.readdirSync(multiSessionsDir);
+        const now = Date.now();
+        const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+        
+        let cleaned = 0;
+        dirs.forEach(dir => {
+            try {
+                const dirPath = path.join(multiSessionsDir, dir);
+                const stats = fs.statSync(dirPath);
+                
+                if (stats.isDirectory() && stats.mtimeMs < weekAgo) {
+                    fs.rmSync(dirPath, { recursive: true, force: true });
+                    cleaned++;
+                    console.log(`🧹 تنظيف جلسة قديمة: ${dir}`);
+                }
+            } catch (error) {
+                // تجاهل الأخطاء
+            }
+        });
+        
+        if (cleaned > 0) {
+            console.log(`✅ تم تنظيف ${cleaned} جلسة قديمة`);
+        }
+    } catch (error) {
+        console.log('⚠️ خطأ في تنظيف الجلسات:', error.message);
+    }
+}
+
+
+
 class MultiSessionManager {
     constructor(maxSessions = 3) {
         this.maxSessions = maxSessions;
@@ -1214,22 +1251,7 @@ app.get('/multi-sessions', (req, res) => {
             }
             
             // تنظيف الجلسات القديمة
-            async function cleanupOldSessions() {
-                if (confirm('هل تريد تنظيف جميع الجلسات الأقدم من أسبوع؟')) {
-                    try {
-                        const response = await fetch('/api/multi-sessions/cleanup', {
-                            method: 'POST'
-                        });
-                        
-                        const result = await response.json();
-                        alert(result.message || '✅ تم التنظيف');
-                        loadMultiSessions();
-                        loadStats();
-                    } catch (error) {
-                        alert('❌ خطأ: ' + error.message);
-                    }
-                }
-            }
+           
             
             // تصدير بيانات الجلسات
             async function exportSessionsData() {
@@ -1431,7 +1453,7 @@ async function initializeAllSystems() {
     console.log('📦 تحميل النظام الأساسي...');
     
     // 2. تنظيف الجلسات القديمة
-    cleanupOldSessions();
+   cleanupOldSessions();
     
     // 3. بدء الجلسات المحفوظة تلقائياً
     autoStartSavedSessions();
@@ -3873,6 +3895,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
