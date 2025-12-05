@@ -936,6 +936,217 @@ app.get('/multi-sessions', (req, res) => {
             .back-btn:hover {
                 background: #5a6268;
             }
+            // ⭐⭐ أضف هذا CSS في <style> ⭐⭐
+.qr-display-container {
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    border-radius: 20px;
+    padding: 30px;
+    margin: 25px 0;
+    border: 3px solid #25D366;
+    box-shadow: 0 15px 35px rgba(37, 211, 102, 0.15);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-display-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, 
+        transparent 30%, 
+        rgba(37, 211, 102, 0.05) 50%, 
+        transparent 70%);
+    animation: shine 3s infinite linear;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.qr-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.qr-header h3 {
+    margin: 0;
+    color: #25D366;
+    font-size: 1.6em;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.qr-icon {
+    font-size: 2em;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.qr-code-display {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px dashed #25D366;
+    margin: 0 auto 25px;
+    max-width: 350px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.qr-code-display:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.qr-image {
+    max-width: 280px;
+    border-radius: 10px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transition: transform 0.3s;
+}
+
+.qr-image:hover {
+    transform: scale(1.02);
+}
+
+.session-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    text-align: right;
+    border-right: 4px solid #25D366;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.info-label {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.info-value {
+    color: #343a40;
+    font-weight: 700;
+}
+
+.qr-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.qr-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1em;
+}
+
+.qr-btn-primary {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white;
+}
+
+.qr-btn-secondary {
+    background: #17a2b8;
+    color: white;
+}
+
+.qr-btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.qr-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 15px rgba(0,0,0,0.2);
+}
+
+.qr-btn:active {
+    transform: translateY(-1px);
+}
+
+.qr-status {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    display: none;
+}
+
+.qr-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #c3e6cb;
+}
+
+.qr-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+}
+
+.qr-timer {
+    margin-top: 15px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 8px;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    font-weight: 600;
+}
+
+.countdown {
+    font-size: 1.2em;
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.qr-instructions {
+    background: #e8f5e9;
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 25px;
+    border-right: 4px solid #28a745;
+}
+
+.qr-instructions ol {
+    padding-right: 20px;
+    margin: 10px 0;
+}
+
+.qr-instructions li {
+    margin: 10px 0;
+    line-height: 1.6;
+}
         </style>
     </head>
     <body>
@@ -1057,7 +1268,315 @@ app.get('/multi-sessions', (req, res) => {
                 </div>
             </div>
         </div>
+        // ⭐⭐ أضف هذا في صفحة multi-sessions بعد قسم "الجلسات النشطة" ⭐⭐
+
+<div class="qr-display-container" id="qrMainContainer" style="display: none;">
+    <div class="qr-header">
+        <div class="qr-icon">📱</div>
+        <h3>عرض باركود الجلسة</h3>
+    </div>
+    
+    <div class="session-info">
+        <div class="info-row">
+            <span class="info-label">👤 المستخدم:</span>
+            <span class="info-value" id="qrUserName">--</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">📱 الرقم:</span>
+            <span class="info-value" id="qrUserId">--</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">🆔 كود الجلسة:</span>
+            <span class="info-value" id="qrSessionId">--</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">⏰ وقت الإنشاء:</span>
+            <span class="info-value" id="qrCreatedAt">--</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">🔗 الحالة:</span>
+            <span class="info-value" id="qrStatus">--</span>
+        </div>
+    </div>
+    
+    <div class="qr-code-display">
+        <div id="qrImageContainer">
+            <div style="padding: 40px; color: #6c757d; text-align: center;">
+                <div style="font-size: 3em; margin-bottom: 15px;">📭</div>
+                <h4>لم يتم تحميل الباركود</h4>
+                <p>اختر جلسة من القائمة وانقر على "📱 عرض الباركود"</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="qr-timer" id="qrTimer" style="display: none;">
+        ⏳ الباركود صالح لمدة: <span class="countdown" id="qrCountdown">60</span> ثانية
+    </div>
+    
+    <div class="qr-actions">
+        <button class="qr-btn qr-btn-primary" onclick="generateNewQR()">
+            🔄 إنشاء باركود جديد
+        </button>
+        <button class="qr-btn qr-btn-secondary" onclick="downloadQR()">
+            📥 تحميل الباركود
+        </button>
+        <button class="qr-btn qr-btn-danger" onclick="hideQRContainer()">
+            ✖️ إغلاق
+        </button>
+    </div>
+    
+    <div class="qr-instructions">
+        <h4>📋 تعليمات الاستخدام:</h4>
+        <ol>
+            <li>افتح تطبيق WhatsApp على هاتفك</li>
+            <li>اضغط على النقاط الثلاث (⋮) ← الأجهزة المرتبطة</li>
+            <li>اضغط على "ربط جهاز"</li>
+            <li>امسح الباركود المعروض أعلاه</li>
+            <li>انتظر حتى يكتمل الربط (5-10 ثواني)</li>
+        </ol>
+        <p style="color: #dc3545; margin-top: 10px; font-weight: bold;">
+            ⚠️ الباركود صالح لمدة 60 ثانية فقط
+        </p>
+    </div>
+    
+    <div id="qrStatusMessage" class="qr-status"></div>
+</div>
+
+<script>
+// ⭐⭐ دوال إدارة الباركود ⭐⭐
+
+// متغيرات التوقيت
+let qrTimerInterval;
+let qrCountdown = 60;
+
+// عرض كونتينر الباركود
+function showQRContainer(userId, userName, sessionId, createdAt) {
+    // تحديث المعلومات
+    document.getElementById('qrUserId').textContent = userId;
+    document.getElementById('qrUserName').textContent = userName || 'غير معروف';
+    document.getElementById('qrSessionId').textContent = sessionId ? sessionId.substring(0, 15) + '...' : '--';
+    document.getElementById('qrCreatedAt').textContent = createdAt ? 
+        new Date(createdAt).toLocaleString('ar-SA') : '--';
+    
+    // إظهار الكونتينر
+    document.getElementById('qrMainContainer').style.display = 'block';
+    
+    // تحميل الباركود
+    loadQRCode(userId);
+    
+    // بدء التوقيت
+    startQRCountdown();
+    
+    // تمرير للكونتينر
+    document.getElementById('qrMainContainer').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+    });
+}
+
+// إخفاء الكونتينر
+function hideQRContainer() {
+    document.getElementById('qrMainContainer').style.display = 'none';
+    clearInterval(qrTimerInterval);
+    showStatusMessage('تم إغلاق عارض الباركود', 'success');
+}
+
+// تحميل الباركود
+async function loadQRCode(userId) {
+    try {
+        showLoadingState();
         
+        const response = await fetch(\`/api/multi-sessions/\${userId}/qr\`);
+        const data = await response.json();
+        
+        if (data.success && data.qrCode) {
+            // عرض الباركود
+            document.getElementById('qrImageContainer').innerHTML = 
+                \`<img src="\${data.qrCode}" class="qr-image" alt="QR Code">\`;
+            
+            // تحديث الحالة
+            document.getElementById('qrStatus').textContent = '✅ جاهز';
+            document.getElementById('qrStatus').style.color = '#28a745';
+            
+            // إظهار التوقيت
+            document.getElementById('qrTimer').style.display = 'block';
+            
+            // إعادة تعيين التوقيت
+            resetCountdown();
+            
+            showStatusMessage('✅ تم تحميل الباركود بنجاح', 'success');
+            
+        } else {
+            showErrorState(data.error || 'لا يوجد باركود للجلسة');
+        }
+        
+    } catch (error) {
+        showErrorState('خطأ في تحميل الباركود: ' + error.message);
+    }
+}
+
+// إنشاء باركود جديد
+async function generateNewQR() {
+    const userId = document.getElementById('qrUserId').textContent;
+    if (userId === '--') return;
+    
+    try {
+        showLoadingState();
+        
+        // إرسال طلب لإنشاء باركود جديد
+        const response = await fetch(\`/api/multi-sessions/\${userId}/refresh-qr\`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // انتظار ثم إعادة التحميل
+            setTimeout(() => {
+                loadQRCode(userId);
+                showStatusMessage('✅ تم إنشاء باركود جديد', 'success');
+            }, 2000);
+        } else {
+            showErrorState(data.error || 'فشل إنشاء باركود جديد');
+        }
+        
+    } catch (error) {
+        showErrorState('خطأ: ' + error.message);
+    }
+}
+
+// تحميل الباركود كصورة
+function downloadQR() {
+    const qrImage = document.querySelector('.qr-image');
+    if (!qrImage || !qrImage.src) {
+        showStatusMessage('❌ لا يوجد باركود للتحميل', 'error');
+        return;
+    }
+    
+    const link = document.createElement('a');
+    link.href = qrImage.src;
+    link.download = \`whatsapp-qr-\${document.getElementById('qrUserId').textContent}-\${new Date().getTime()}.png\`;
+    link.click();
+    
+    showStatusMessage('✅ تم بدء تحميل الباركود', 'success');
+}
+
+// بدء عد تنازلي
+function startQRCountdown() {
+    clearInterval(qrTimerInterval);
+    qrCountdown = 60;
+    
+    qrTimerInterval = setInterval(() => {
+        qrCountdown--;
+        document.getElementById('qrCountdown').textContent = qrCountdown;
+        
+        if (qrCountdown <= 10) {
+            document.getElementById('qrCountdown').style.color = '#dc3545';
+        }
+        
+        if (qrCountdown <= 0) {
+            clearInterval(qrTimerInterval);
+            document.getElementById('qrImageContainer').innerHTML = \`
+                <div style="padding: 40px; color: #dc3545; text-align: center;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">⏰</div>
+                    <h4>انتهت صلاحية الباركود</h4>
+                    <button onclick="generateNewQR()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; margin-top: 10px;">
+                        🔄 إنشاء باركود جديد
+                    </button>
+                </div>
+            \`;
+        }
+    }, 1000);
+}
+
+// إعادة تعيين التوقيت
+function resetCountdown() {
+    qrCountdown = 60;
+    document.getElementById('qrCountdown').textContent = qrCountdown;
+    document.getElementById('qrCountdown').style.color = '#dc3545';
+}
+
+// عرض حالة التحميل
+function showLoadingState() {
+    document.getElementById('qrImageContainer').innerHTML = \`
+        <div style="padding: 50px; text-align: center;">
+            <div style="font-size: 2em; color: #17a2b8; margin-bottom: 15px;">
+                <div class="spinner"></div>
+            </div>
+            <h4 style="color: #17a2b8;">جاري تحميل الباركود...</h4>
+            <p>يرجى الانتظار</p>
+        </div>
+    \`;
+    
+    document.getElementById('qrStatus').textContent = '⏳ جاري التحميل';
+    document.getElementById('qrStatus').style.color = '#17a2b8';
+}
+
+// عرض حالة الخطأ
+function showErrorState(message) {
+    document.getElementById('qrImageContainer').innerHTML = \`
+        <div style="padding: 40px; color: #dc3545; text-align: center;">
+            <div style="font-size: 3em; margin-bottom: 15px;">❌</div>
+            <h4>فشل تحميل الباركود</h4>
+            <p>\${message}</p>
+            <button onclick="loadQRCode('\${document.getElementById('qrUserId').textContent}')" 
+                    style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; margin-top: 10px;">
+                🔄 إعادة المحاولة
+            </button>
+        </div>
+    \`;
+    
+    document.getElementById('qrStatus').textContent = '❌ خطأ';
+    document.getElementById('qrStatus').style.color = '#dc3545';
+    document.getElementById('qrTimer').style.display = 'none';
+}
+
+// عرض رسالة حالة
+function showStatusMessage(message, type) {
+    const statusDiv = document.getElementById('qrStatusMessage');
+    statusDiv.textContent = message;
+    statusDiv.className = \`qr-status \${type}\`;
+    statusDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 5000);
+}
+
+// أضف هذا النمط للـ Spinner
+const spinnerStyle = document.createElement('style');
+spinnerStyle.textContent = \`
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #25D366;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+\`;
+document.head.appendChild(spinnerStyle);
+
+// ⭐⭐ تعديل زر عرض الباركود في قائمة الجلسات ⭐⭐
+// في دالة loadMultiSessions، عدل الزر:
+html += \`
+<button onclick="showQRForSession('\${session.userId}', '\${session.userName}', '\${session.sessionId}', '\${session.createdAt}')" 
+        style="padding: 5px 10px; font-size: 0.9em; background: #17a2b8; width: auto; margin-left: 5px;">
+    📱 عرض الباركود
+</button>
+\`;
+
+// دالة عرض الباركود للجلسة
+function showQRForSession(userId, userName, sessionId, createdAt) {
+    showQRContainer(userId, userName, sessionId, createdAt);
+}
+</script>
         <script>
             // تحميل الإحصائيات الأولية
             async function loadStats() {
@@ -4170,6 +4689,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
