@@ -1,18 +1,18 @@
 const express = require('express');
 const http = require('http');
-
-
-
 const wppconnect = require('@wppconnect-team/wppconnect');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+
+// ⭐⭐⭐ تعريف جميع المسارات أولاً ⭐⭐⭐
 const dataDir = path.join(__dirname, 'data');
+const sessionsDir = path.join(dataDir, 'sessions'); // ⭐ أضف هذا السطر
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
 
-// التأكد من وجود المجلدات
+// الآن يمكنك استخدام sessionsDir بأمان
 function createDirectories() {
-    const dirs = [dataDir, sessionsDir, multiSessionsDir];
+    const dirs = [dataDir, sessionsDir, multiSessionsDir]; // ✅ الآن جميعها معرّفة
     dirs.forEach(dir => {
         try {
             if (!fs.existsSync(dir)) {
@@ -25,8 +25,7 @@ function createDirectories() {
     });
 }
 
-// تنفيذ إنشاء المجلدات
-createDirectories();
+
 
 function cleanupChromiumFiles() {
     try {
@@ -3151,6 +3150,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
