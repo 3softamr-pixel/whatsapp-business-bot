@@ -170,25 +170,111 @@ class MultiSessionManager {
         return sessionConfig;
     }
 
-    // بدء جلسة WhatsApp لمستخدم معين
+    // ⭐⭐ الإصلاح الرئيسي: استخدم نفس إعدادات Puppeteer للنظام الرئيسي ⭐⭐
+    async getPuppeteerOptions(userDataDir) {
+        try {
+            // استخدم نفس الكود الموجود في getPuppeteerConfig للنظام الرئيسي
+            let executablePath;
+            
+            // المحاولة مع @sparticuz/chromium أولاً (يعمل على Render)
+            try {
+                const chromium = require('@sparticuz/chromium');
+                executablePath = await chromium.executablePath();
+                console.log(`✅ [MultiSession] Using @sparticuz/chromium: ${executablePath}`);
+            } catch (chromiumError) {
+                console.log(`⚠️ [MultiSession] @sparticuz/chromium not available:`, chromiumError.message);
+                
+                // البحث عن chromium في المسارات الشائعة
+                const possiblePaths = [
+                    process.env.PUPPETEER_EXECUTABLE_PATH,
+                    process.env.CHROMIUM_PATH,
+                    '/usr/bin/chromium-browser',
+                    '/usr/bin/chromium',
+                    '/usr/bin/google-chrome-stable',
+                    '/usr/bin/google-chrome',
+                    '/opt/render/.cache/puppeteer/chrome/linux-143.0.7499.40/chrome-linux64/chrome'
+                ].filter(Boolean);
+                
+                for (const path of possiblePaths) {
+                    if (fs.existsSync(path)) {
+                        executablePath = path;
+                        console.log(`✅ [MultiSession] Found Chrome at: ${path}`);
+                        break;
+                    }
+                }
+            }
+            
+            // إذا لم نجد أي مسار، استخدم الإعدادات البسيطة
+            const puppeteerOptions = {
+                headless: 'new',
+                executablePath: executablePath || undefined,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process',
+                    '--disable-web-security',
+                    '--disable-features=site-per-process'
+                ],
+                userDataDir: userDataDir,
+                timeout: 60000,
+                ignoreDefaultArgs: ['--disable-extensions']
+            };
+            
+            console.log(`🔧 [MultiSession] Puppeteer options for ${userDataDir}:`, {
+                hasExecutablePath: !!executablePath,
+                argsCount: puppeteerOptions.args.length
+            });
+            
+            return puppeteerOptions;
+            
+        } catch (error) {
+            console.error(`❌ [MultiSession] Error getting puppeteer options:`, error);
+            
+            // Fallback بسيط
+            return {
+                headless: 'new',
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage'
+                ],
+                userDataDir: userDataDir,
+                timeout: 30000
+            };
+        }
+    }
+
+    // ⭐⭐ الإصلاح: دالة بدء الجلسة المعدلة ⭐⭐
     async startSession(sessionConfig) {
         try {
-            console.log(`🚀 بدء جلسة WhatsApp لـ ${sessionConfig.userName}`);
+            console.log(`🚀 [MultiSession] بدء جلسة WhatsApp لـ ${sessionConfig.userName}`);
+            
+            // الحصول على إعدادات Puppeteer (نفس النظام الرئيسي)
+            const puppeteerOptions = await this.getPuppeteerOptions(sessionConfig.dir);
             
             const client = await wppconnect.create({
                 session: sessionConfig.sessionId,
-                puppeteerOptions: this.getPuppeteerOptions(sessionConfig.dir),
+                puppeteerOptions: puppeteerOptions,
                 catchQR: (base64Qr, asciiQR) => {
-                    console.log(`✅ QR Code جاهز لـ ${sessionConfig.userName}`);
+                    console.log(`✅ [MultiSession] QR Code جاهز لـ ${sessionConfig.userName}`);
                     sessionConfig.qrCode = base64Qr;
                     this.updateSessionConfig(sessionConfig.userId, { qrCode: base64Qr });
                     
                     // حفظ QR في ملف للعرض لاحقاً
                     this.saveQRImage(sessionConfig, base64Qr);
                 },
-                logQR: true,
+                logQR: false, // تعطيل logs الطويلة
                 disableWelcome: true,
-                autoClose: 0
+                autoClose: 0,
+                createOptions: {
+                    browserArgs: puppeteerOptions.args,
+                    headless: puppeteerOptions.headless
+                }
             });
 
             // تحديث بيانات الجلسة
@@ -203,32 +289,62 @@ class MultiSessionManager {
             // إرسال رسالة ترحيب
             await this.sendWelcomeMessage(client, sessionConfig);
 
-            console.log(`🎉 جلسة ${sessionConfig.userName} تعمل بنجاح!`);
+            console.log(`🎉 [MultiSession] جلسة ${sessionConfig.userName} تعمل بنجاح!`);
             return { success: true, sessionConfig };
 
         } catch (error) {
-            console.error(`❌ خطأ في بدء جلسة ${sessionConfig.userName}:`, error);
-            return { success: false, error: error.message };
+            console.error(`❌ [MultiSession] خطأ في بدء جلسة ${sessionConfig.userName}:`, error.message);
+            console.error(`🔍 [MultiSession] تفاصيل الخطأ:`, error);
+            
+            // محاولة Fallback
+            return await this.startSessionWithFallback(sessionConfig);
         }
     }
 
-    // إعدادات Puppeteer لكل جلسة
-    getPuppeteerOptions(userDataDir) {
-        return {
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process',
-                '--disable-gpu'
-            ],
-            userDataDir: userDataDir,
-            timeout: 60000
-        };
+    // ⭐ دالة Fallback للطوارئ
+    async startSessionWithFallback(sessionConfig) {
+        try {
+            console.log(`🔄 [MultiSession] محاولة Fallback لـ ${sessionConfig.userName}`);
+            
+            // استخدام chromium-browser الموجود عادة على Render
+            const puppeteerOptions = {
+                headless: 'new',
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage'
+                ],
+                executablePath: '/usr/bin/chromium-browser', // ⭐ هذا المفتاح
+                userDataDir: sessionConfig.dir,
+                timeout: 30000
+            };
+            
+            const client = await wppconnect.create({
+                session: sessionConfig.sessionId,
+                puppeteerOptions: puppeteerOptions,
+                catchQR: (base64Qr) => {
+                    console.log(`✅ [MultiSession Fallback] QR Code جاهز لـ ${sessionConfig.userName}`);
+                    sessionConfig.qrCode = base64Qr;
+                    this.saveQRImage(sessionConfig, base64Qr);
+                },
+                disableWelcome: true
+            });
+            
+            sessionConfig.client = client;
+            sessionConfig.connected = true;
+            this.activeSessions.set(sessionConfig.sessionId, sessionConfig);
+            
+            console.log(`✅ [MultiSession Fallback] جلسة ${sessionConfig.userName} تعمل`);
+            return { success: true, sessionConfig, mode: 'fallback' };
+            
+        } catch (fallbackError) {
+            console.error(`❌ [MultiSession] فشل Fallback أيضًا:`, fallbackError.message);
+            return { 
+                success: false, 
+                error: fallbackError.message,
+                note: 'جرب استخدام الرابط /multi-sessions-basic للمحاولة البديلة'
+            };
+        }
     }
 
     // إعداد معالج الرسائل للجلسة
@@ -287,6 +403,13 @@ class MultiSessionManager {
         try {
             const qrFile = path.join(sessionConfig.dir, 'qr_code.txt');
             fs.writeFileSync(qrFile, base64Qr);
+            
+            // أيضاً حفظ كصورة
+            const qrImageFile = path.join(sessionConfig.dir, 'qr_code.png');
+            if (base64Qr.startsWith('data:image')) {
+                const base64Data = base64Qr.replace(/^data:image\/png;base64,/, '');
+                fs.writeFileSync(qrImageFile, base64Data, 'base64');
+            }
         } catch (error) {
             console.log(`⚠️ لا يمكن حفظ QR لـ ${sessionConfig.userName}`);
         }
@@ -368,18 +491,45 @@ class MultiSessionManager {
         if (session && session.client) {
             try {
                 await session.client.close();
-                console.log(`🛑 إيقاف جلسة ${session.userName}`);
+                console.log(`🛑 [MultiSession] إيقاف جلسة ${session.userName}`);
             } catch (error) {
-                console.error(`❌ خطأ في إيقاف الجلسة:`, error);
+                console.error(`❌ [MultiSession] خطأ في إيقاف الجلسة:`, error);
             }
         }
         this.activeSessions.delete(sessionId);
+    }
+
+    // ⭐ دالة جديدة: تشغيل جميع الجلسات المحفوظة
+    async startAllSavedSessions() {
+        const configs = Array.from(this.sessionConfigs.values());
+        console.log(`🔄 [MultiSession] محاولة تشغيل ${configs.length} جلسة محفوظة`);
+        
+        let started = 0;
+        for (const config of configs.slice(0, this.maxSessions)) {
+            if (!config.connected) {
+                try {
+                    const result = await this.startSession(config);
+                    if (result.success) {
+                        started++;
+                        console.log(`✅ [MultiSession] بدأت جلسة ${config.userName}`);
+                        
+                        // انتظار بين الجلسات
+                        if (started < configs.length) {
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ [MultiSession] فشل بدء جلسة ${config.userName}:`, error.message);
+                }
+            }
+        }
+        
+        return { started, total: configs.length };
     }
 }
 
 // ⭐ إنشاء مدير الجلسات المتعددة
 const multiSessionManager = new MultiSessionManager(3);
-
 // ⭐ تعديل دالة processUserInput لدعم الجلسات المتعددة
 async function processUserInput(userId, userName, text, client, sessionConfig = null) {
     // إذا كانت هناك جلسة محددة، استخدم إعداداتها
@@ -3723,6 +3873,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
