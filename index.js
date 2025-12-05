@@ -11,7 +11,6 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 // ⭐ التعديل الأساسي: إضافة استيراد المكتبة
-const chromium = require('@sparticuz/chromium');
 
 // ⭐ إعادة تكوين puppeteerConfig بشكل كامل
 const puppeteerConfig = {
@@ -2449,6 +2448,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
