@@ -537,148 +537,729 @@ app.post('/api/multi-sessions/:userId/send', async (req, res) => {
 });
 
 // ⭐ تحديث واجهة المستخدم الحالية
+
+// ============== صفحة منفصلة للجلسات المتعددة ==============
+app.get('/multi-sessions', (req, res) => {
+    res.send(`
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎪 نظام الجلسات المتعددة - ${customReplies.companyName}</title>
+        <style>
+            :root {
+                --primary-color: #25D366;
+                --secondary-color: #128C7E;
+            }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            }
+            .header {
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                padding: 25px;
+                text-align: center;
+                color: white;
+                border-radius: 15px;
+                margin-bottom: 30px;
+            }
+            .header h1 {
+                font-size: 2.2em;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .header p {
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            .stat-card {
+                background: white;
+                padding: 20px;
+                border-radius: 12px;
+                text-align: center;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                border-left: 5px solid var(--primary-color);
+            }
+            .stat-number {
+                font-size: 2.2em;
+                font-weight: bold;
+                color: var(--primary-color);
+                margin-bottom: 8px;
+            }
+            .main-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+                margin-bottom: 30px;
+            }
+            @media (max-width: 768px) {
+                .main-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .section {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 15px;
+                border: 2px solid #e9ecef;
+            }
+            .section h3 {
+                color: var(--primary-color);
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #eee;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #333;
+            }
+            input {
+                width: 100%;
+                padding: 12px 15px;
+                border: 2px solid #e0e0e0;
+                border-radius: 10px;
+                font-size: 16px;
+                transition: border-color 0.3s;
+            }
+            input:focus {
+                border-color: var(--primary-color);
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+            }
+            button {
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 12px 25px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+                transition: all 0.3s;
+                box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+                width: 100%;
+                margin-top: 10px;
+            }
+            button:hover {
+                background: var(--secondary-color);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            }
+            .sessions-list {
+                max-height: 400px;
+                overflow-y: auto;
+                padding: 15px;
+                background: white;
+                border-radius: 10px;
+                border: 1px solid #e0e0e0;
+            }
+            .session-item {
+                background: white;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 8px;
+                border-left: 4px solid var(--primary-color);
+                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+                transition: all 0.3s;
+            }
+            .session-item:hover {
+                transform: translateX(5px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+            }
+            .session-connected {
+                border-left-color: #28a745;
+            }
+            .session-disconnected {
+                border-left-color: #dc3545;
+            }
+            .qr-container {
+                text-align: center;
+                padding: 20px;
+                background: white;
+                border-radius: 15px;
+                margin-top: 20px;
+                border: 2px dashed #ddd;
+                display: none;
+            }
+            .back-btn {
+                background: #6c757d;
+                width: auto;
+                padding: 10px 20px;
+                margin-top: 20px;
+            }
+            .back-btn:hover {
+                background: #5a6268;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎪 نظام الجلسات المتعددة</h1>
+                <p>إدارة ما يصل إلى 3 جلسات WhatsApp مستقلة</p>
+                <button onclick="window.location.href='/'" class="back-btn">
+                    ⬅️ العودة للواجهة الرئيسية
+                </button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="maxSessions">3</div>
+                    <div>🔢 الحد الأقصى للجلسات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeSessionsCount">0</div>
+                    <div>✅ الجلسات النشطة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSessionsCount">0</div>
+                    <div>📊 إجمالي الجلسات</div>
+                </div>
+            </div>
+            
+            <div class="main-grid">
+                <div class="section">
+                    <h3>➕ إنشاء جلسة جديدة</h3>
+                    <div class="form-group">
+                        <label>👤 اسم المستخدم:</label>
+                        <input type="text" id="newSessionUserName" placeholder="مثال: أحمد للتقنية">
+                    </div>
+                    <div class="form-group">
+                        <label>📱 رقم الهاتف:</label>
+                        <input type="text" id="newSessionUserId" placeholder="مثال: 966555555555">
+                    </div>
+                    <button onclick="createMultiSession()">🚀 إنشاء جلسة جديدة</button>
+                    <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
+                        <h4>📝 ملاحظات:</h4>
+                        <ul style="padding-right: 20px;">
+                            <li>الحد الأقصى: 3 جلسات متزامنة</li>
+                            <li>كل جلسة لها إعداداتها الخاصة</li>
+                            <li>سيظهر QR Code بعد الإنشاء</li>
+                            <li>امسح QR Code بواسطة WhatsApp</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>📊 الجلسات النشطة</h3>
+                    <div class="sessions-list" id="multiSessionsList">
+                        <div style="text-align: center; padding: 30px; color: #666;">
+                            ⏳ جاري تحميل الجلسات...
+                        </div>
+                    </div>
+                    <button onclick="loadMultiSessions()" style="background: #17a2b8;">
+                        🔄 تحديث القائمة
+                    </button>
+                    <button onclick="refreshAllSessions()" style="background: #ffc107; color: #333;">
+                        🔁 إعادة تشغيل جميع الجلسات
+                    </button>
+                </div>
+            </div>
+            
+            <div id="sessionQRContainer" class="qr-container">
+                <h3>📱 QR Code للجلسة</h3>
+                <div id="sessionQRCode"></div>
+                <p id="qrSessionInfo" style="margin-top: 10px;"></p>
+                <button onclick="hideQR()" style="background: #6c757d; width: auto;">
+                    ✖️ إخفاء QR Code
+                </button>
+            </div>
+            
+            <div class="section">
+                <h3>⚙️ إدارة الجلسات</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <button onclick="startAllSessions()" style="background: #28a745;">
+                        ▶️ تشغيل جميع الجلسات
+                    </button>
+                    <button onclick="stopAllSessions()" style="background: #dc3545;">
+                        ⏹️ إيقاف جميع الجلسات
+                    </button>
+                    <button onclick="cleanupOldSessions()" style="background: #6c757d;">
+                        🧹 تنظيف الجلسات القديمة
+                    </button>
+                    <button onclick="exportSessionsData()" style="background: #007bff;">
+                        📥 تصدير بيانات الجلسات
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // تحميل الإحصائيات الأولية
+            async function loadStats() {
+                try {
+                    const response = await fetch('/api/multi-sessions');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        document.getElementById('activeSessionsCount').textContent = 
+                            data.activeCount || 0;
+                        document.getElementById('totalSessionsCount').textContent = 
+                            data.configCount || 0;
+                        document.getElementById('maxSessions').textContent = 
+                            data.maxSessions || 3;
+                    }
+                } catch (error) {
+                    console.error('خطأ في تحميل الإحصائيات:', error);
+                }
+            }
+            
+            // دالة إنشاء جلسة جديدة
+            async function createMultiSession() {
+                const userName = document.getElementById('newSessionUserName').value.trim();
+                const userId = document.getElementById('newSessionUserId').value.trim();
+                
+                if (!userName || !userId) {
+                    alert('⚠️ الرجاء إدخال جميع البيانات المطلوبة');
+                    return;
+                }
+                
+                // تحقق من تنسيق رقم الهاتف
+                if (!userId.match(/^[0-9]{10,15}$/)) {
+                    alert('❌ رقم الهاتف غير صالح. يرجى إدخال 10-15 رقم');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/multi-sessions/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            userName, 
+                            userId,
+                            customSettings: {
+                                companyName: \`\${userName} للتقنية\`,
+                                autoReply: true,
+                                enableImages: true
+                            }
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('✅ ' + result.message);
+                        // تفريغ الحقول
+                        document.getElementById('newSessionUserName').value = '';
+                        document.getElementById('newSessionUserId').value = '';
+                        
+                        // تحديث القائمة والإحصائيات
+                        loadMultiSessions();
+                        loadStats();
+                        
+                        // عرض QR Code بعد ثانية
+                        setTimeout(() => {
+                            showSessionQR(userId, userName);
+                        }, 1000);
+                    } else {
+                        alert('❌ ' + (result.error || 'حدث خطأ غير معروف'));
+                    }
+                } catch (error) {
+                    alert('❌ خطأ في الاتصال: ' + error.message);
+                }
+            }
+            
+            // تحميل قائمة الجلسات
+            async function loadMultiSessions() {
+                try {
+                    const response = await fetch('/api/multi-sessions');
+                    const data = await response.json();
+                    
+                    let html = '';
+                    if (data.success && data.sessions && data.sessions.length > 0) {
+                        data.sessions.forEach(session => {
+                            html += \`
+                            <div class="session-item \${session.connected ? 'session-connected' : 'session-disconnected'}">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong style="font-size: 1.1em;">\${session.userName}</strong><br>
+                                        <small style="color: #666;">\${session.userId}</small>
+                                    </div>
+                                    <div style="text-align: left;">
+                                        <span style="padding: 4px 8px; background: \${session.connected ? '#d4edda' : '#f8d7da'}; 
+                                              color: \${session.connected ? '#155724' : '#721c24'}; 
+                                              border-radius: 4px; font-size: 0.9em;">
+                                            \${session.connected ? '✅ متصل' : '❌ غير متصل'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                                    🕐 آخر نشاط: \${session.lastActive || 'غير معروف'}
+                                </div>
+                                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                    <button onclick="showSessionQR('\${session.userId}', '\${session.userName}')" 
+                                            style="padding: 5px 10px; font-size: 0.9em; background: #17a2b8; width: auto;">
+                                        📱 QR Code
+                                    </button>
+                                    <button onclick="sendTestMessage('\${session.userId}')" 
+                                            style="padding: 5px 10px; font-size: 0.9em; background: #28a745; width: auto;">
+                                        ✉️ رسالة تجريبية
+                                    </button>
+                                    <button onclick="stopSession('\${session.userId}')" 
+                                            style="padding: 5px 10px; font-size: 0.9em; background: #dc3545; width: auto;">
+                                        ⏹️ إيقاف
+                                    </button>
+                                </div>
+                            </div>
+                            \`;
+                        });
+                    } else {
+                        html = \`
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <div style="font-size: 3em; margin-bottom: 15px;">📭</div>
+                            <h3>لا توجد جلسات نشطة</h3>
+                            <p>قم بإنشاء جلسة جديدة لبدء الاستخدام</p>
+                        </div>
+                        \`;
+                    }
+                    
+                    document.getElementById('multiSessionsList').innerHTML = html;
+                } catch (error) {
+                    console.error('خطأ في تحميل الجلسات:', error);
+                    document.getElementById('multiSessionsList').innerHTML = \`
+                    <div style="text-align: center; padding: 30px; color: #dc3545;">
+                        <h3>❌ خطأ في تحميل الجلسات</h3>
+                        <p>\${error.message}</p>
+                    </div>
+                    \`;
+                }
+            }
+            
+            // عرض QR Code للجلسة
+            async function showSessionQR(userId, userName = '') {
+                try {
+                    const response = await fetch(\`/api/multi-sessions/\${userId}/qr\`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.qrCode) {
+                        document.getElementById('sessionQRCode').innerHTML = 
+                            \`<img src="\${data.qrCode}" style="max-width: 300px; border: 2px solid #ddd; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">\`;
+                        
+                        document.getElementById('qrSessionInfo').innerHTML = 
+                            \`<strong>\${userName || data.userName || 'مستخدم'}</strong> - \${data.sessionId?.substring(0, 8) || ''}\`;
+                        
+                        document.getElementById('sessionQRContainer').style.display = 'block';
+                        
+                        // تمرير إلى أعلى
+                        document.getElementById('sessionQRContainer').scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        alert('❌ لا يوجد QR Code للجلسة. قد تكون الجلسة غير نشطة أو لم يتم إنشاؤها بعد.');
+                    }
+                } catch (error) {
+                    alert('❌ خطأ في الحصول على QR Code: ' + error.message);
+                }
+            }
+            
+            // إخفاء QR Code
+            function hideQR() {
+                document.getElementById('sessionQRContainer').style.display = 'none';
+            }
+            
+            // إرسال رسالة تجريبية
+            async function sendTestMessage(userId) {
+                const message = prompt('أدخل الرسالة التجريبية:', 'مرحباً! هذه رسالة تجريبية من نظام الجلسات المتعددة.');
+                
+                if (message) {
+                    try {
+                        const response = await fetch(\`/api/multi-sessions/\${userId}/send\`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                to: userId,
+                                message: message + '\\n\\n🕐 ' + new Date().toLocaleString('ar-SA')
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        alert(result.success ? '✅ تم إرسال الرسالة' : '❌ ' + result.error);
+                    } catch (error) {
+                        alert('❌ خطأ في إرسال الرسالة: ' + error.message);
+                    }
+                }
+            }
+            
+            // إيقاف جلسة
+            async function stopSession(userId) {
+                if (confirm('هل أنت متأكد من إيقاف هذه الجلسة؟')) {
+                    try {
+                        const response = await fetch(\`/api/multi-sessions/\${userId}/stop\`, {
+                            method: 'POST'
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('✅ تم إيقاف الجلسة');
+                            loadMultiSessions();
+                            loadStats();
+                        }
+                    } catch (error) {
+                        alert('❌ خطأ في إيقاف الجلسة: ' + error.message);
+                    }
+                }
+            }
+            
+            // تشغيل جميع الجلسات
+            async function startAllSessions() {
+                if (confirm('هل تريد تشغيل جميع الجلسات المحفوظة؟')) {
+                    try {
+                        const response = await fetch('/api/multi-sessions/start-all', {
+                            method: 'POST'
+                        });
+                        
+                        const result = await response.json();
+                        alert(result.message || '✅ جاري تشغيل جميع الجلسات');
+                        setTimeout(() => {
+                            loadMultiSessions();
+                            loadStats();
+                        }, 3000);
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
+            
+            // إيقاف جميع الجلسات
+            async function stopAllSessions() {
+                if (confirm('هل تريد إيقاف جميع الجلسات النشطة؟')) {
+                    try {
+                        const response = await fetch('/api/multi-sessions/stop-all', {
+                            method: 'POST'
+                        });
+                        
+                        const result = await response.json();
+                        alert(result.message || '✅ تم إيقاف جميع الجلسات');
+                        loadMultiSessions();
+                        loadStats();
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
+            
+            // تنظيف الجلسات القديمة
+            async function cleanupOldSessions() {
+                if (confirm('هل تريد تنظيف جميع الجلسات الأقدم من أسبوع؟')) {
+                    try {
+                        const response = await fetch('/api/multi-sessions/cleanup', {
+                            method: 'POST'
+                        });
+                        
+                        const result = await response.json();
+                        alert(result.message || '✅ تم التنظيف');
+                        loadMultiSessions();
+                        loadStats();
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
+            
+            // تصدير بيانات الجلسات
+            async function exportSessionsData() {
+                try {
+                    const response = await fetch('/api/multi-sessions/export');
+                    const data = await response.json();
+                    
+                    const dataStr = JSON.stringify(data, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(dataBlob);
+                    link.download = \`sessions-data-\${new Date().toISOString().split('T')[0]}.json\`;
+                    link.click();
+                    
+                    alert('✅ تم تصدير بيانات الجلسات');
+                } catch (error) {
+                    alert('❌ خطأ في التصدير: ' + error.message);
+                }
+            }
+            
+            // إعادة تشغيل جميع الجلسات
+            async function refreshAllSessions() {
+                if (confirm('هل تريد إعادة تشغيل جميع الجلسات؟ هذا قد يستغرق بعض الوقت.')) {
+                    try {
+                        await stopAllSessions();
+                        setTimeout(async () => {
+                            await startAllSessions();
+                        }, 2000);
+                    } catch (error) {
+                        alert('❌ خطأ: ' + error.message);
+                    }
+                }
+            }
+            
+            // التحميل الأولي للصفحة
+            document.addEventListener('DOMContentLoaded', () => {
+                loadStats();
+                loadMultiSessions();
+                
+                // تحديث تلقائي كل 10 ثواني
+                setInterval(() => {
+                    loadMultiSessions();
+                    loadStats();
+                }, 10000);
+                
+                // تفعيل إدخال Enter
+                document.getElementById('newSessionUserId').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        createMultiSession();
+                    }
+                });
+            });
+        </script>
+    </body>
+    </html>
+    `);
+});
+
+// ============== إضافة APIs جديدة لدعم الصفحة المنفصلة ==============
+
+// 6. إيقاف جلسة معينة
+app.post('/api/multi-sessions/:userId/stop', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const session = multiSessionManager.getUserSession(userId);
+        if (session) {
+            await multiSessionManager.stopSession(session.sessionId);
+            res.json({ success: true, message: `تم إيقاف جلسة ${session.userName}` });
+        } else {
+            res.status(404).json({ success: false, error: 'الجلسة غير نشطة' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 7. تشغيل جميع الجلسات المحفوظة
+app.post('/api/multi-sessions/start-all', async (req, res) => {
+    try {
+        const configs = Array.from(multiSessionManager.sessionConfigs.values());
+        let started = 0;
+        
+        for (const config of configs.slice(0, 3)) {
+            if (!config.connected) {
+                await multiSessionManager.startSession(config);
+                started++;
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `تم تشغيل ${started} جلسة`,
+            started 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 8. إيقاف جميع الجلسات
+app.post('/api/multi-sessions/stop-all', async (req, res) => {
+    try {
+        const sessions = Array.from(multiSessionManager.activeSessions.values());
+        let stopped = 0;
+        
+        for (const session of sessions) {
+            await multiSessionManager.stopSession(session.sessionId);
+            stopped++;
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `تم إيقاف ${stopped} جلسة`,
+            stopped 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 9. تنظيف الجلسات القديمة
+app.post('/api/multi-sessions/cleanup', (req, res) => {
+    try {
+        cleanupOldSessions();
+        res.json({ 
+            success: true, 
+            message: 'تم تنظيف الجلسات القديمة' 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 10. تصدير بيانات الجلسات
+app.get('/api/multi-sessions/export', (req, res) => {
+    try {
+        const sessions = Array.from(multiSessionManager.activeSessions.values());
+        const configs = Array.from(multiSessionManager.sessionConfigs.values());
+        
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            activeSessions: sessions.map(s => ({
+                userId: s.userId,
+                userName: s.userName,
+                sessionId: s.sessionId,
+                connected: s.connected,
+                createdAt: s.createdAt
+            })),
+            savedConfigs: configs.map(c => ({
+                userId: c.userId,
+                userName: c.userName,
+                sessionId: c.sessionId,
+                createdAt: c.createdAt
+            })),
+            statistics: {
+                maxSessions: multiSessionManager.maxSessions,
+                activeCount: sessions.length,
+                configCount: configs.length
+            }
+        };
+        
+        res.json(exportData);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============== حذف المسار المتعارض ==============
+// ⭐ تعليق أو حذف هذا المسار كاملاً:
+/*
 app.get('/', (req, res) => {
     // قراءة HTML الحالي
     let html = fs.readFileSync(__dirname + '/index.html', 'utf8');
     
     // إضافة قسم الجلسات المتعددة
-    const multiSessionsSection = `
-    <!-- قسم الجلسات المتعددة -->
-    <div class="tab-section" style="border: 3px solid #25D366; background: linear-gradient(135deg, #f8fff8, #e8f5e9);">
-        <h3 style="color: #25D366;">🎪 نظام الجلسات المتعددة (3 مستخدمين)</h3>
-        
-        <div class="editor-grid">
-            <div>
-                <h4>➕ إنشاء جلسة جديدة</h4>
-                <div class="form-group">
-                    <label>اسم المستخدم:</label>
-                    <input type="text" id="newSessionUserName" placeholder="أحمد">
-                </div>
-                <div class="form-group">
-                    <label>رقم الهاتف:</label>
-                    <input type="text" id="newSessionUserId" placeholder="966555555555">
-                </div>
-                <button onclick="createMultiSession()" style="background: #25D366;">🚀 إنشاء جلسة</button>
-            </div>
-            
-            <div>
-                <h4>📊 الجلسات النشطة</h4>
-                <div id="multiSessionsList" style="background: white; padding: 15px; border-radius: 10px; max-height: 200px; overflow-y: auto;">
-                    جاري التحميل...
-                </div>
-                <button onclick="loadMultiSessions()" style="margin-top: 10px; background: #17a2b8;">🔄 تحديث القائمة</button>
-            </div>
-        </div>
-        
-        <div id="sessionQRContainer" style="display: none; margin-top: 20px; text-align: center;">
-            <h4>📱 QR Code للجلسة</h4>
-            <div id="sessionQRCode"></div>
-            <button onclick="hideQR()" style="margin-top: 10px; background: #6c757d;">إخفاء</button>
-        </div>
-    </div>
+    const multiSessionsSection = `...`;
     
-    <script>
-        // دالة إنشاء جلسة جديدة
-        async function createMultiSession() {
-            const userName = document.getElementById('newSessionUserName').value;
-            const userId = document.getElementById('newSessionUserId').value;
-            
-            if (!userName || !userId) {
-                alert('الرجاء إدخال جميع البيانات');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/multi-sessions/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName, userId })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('✅ ' + result.message);
-                    document.getElementById('newSessionUserName').value = '';
-                    document.getElementById('newSessionUserId').value = '';
-                    loadMultiSessions();
-                    
-                    // عرض QR Code بعد ثانيتين
-                    setTimeout(() => {
-                        showSessionQR(userId);
-                    }, 2000);
-                } else {
-                    alert('❌ ' + result.error);
-                }
-            } catch (error) {
-                alert('❌ خطأ في الاتصال: ' + error.message);
-            }
-        }
-        
-        // تحميل قائمة الجلسات
-        async function loadMultiSessions() {
-            try {
-                const response = await fetch('/api/multi-sessions');
-                const data = await response.json();
-                
-                let html = '';
-                if (data.sessions.length > 0) {
-                    data.sessions.forEach(session => {
-                        html += \`
-                        <div style="background: \${session.connected ? '#d4edda' : '#f8d7da'}; 
-                                  padding: 10px; margin: 5px 0; border-radius: 5px;">
-                            <strong>\${session.userName}</strong><br>
-                            <small>\${session.userId}</small><br>
-                            <span>\${session.connected ? '✅ متصل' : '❌ غير متصل'}</span>
-                            <button onclick="showSessionQR('\${session.userId}')" 
-                                    style="padding: 3px 8px; font-size: 12px; float: left;">
-                                📱 QR
-                            </button>
-                        </div>
-                        \`;
-                    });
-                } else {
-                    html = '<p>لا توجد جلسات نشطة</p>';
-                }
-                
-                document.getElementById('multiSessionsList').innerHTML = html;
-            } catch (error) {
-                console.error('خطأ في تحميل الجلسات:', error);
-            }
-        }
-        
-        // عرض QR Code للجلسة
-        async function showSessionQR(userId) {
-            try {
-                const response = await fetch(\`/api/multi-sessions/\${userId}/qr\`);
-                const data = await response.json();
-                
-                if (data.success && data.qrCode) {
-                    document.getElementById('sessionQRCode').innerHTML = 
-                        \`<img src="\${data.qrCode}" style="max-width: 200px; border: 2px solid #ddd; border-radius: 10px;">\`;
-                    document.getElementById('sessionQRContainer').style.display = 'block';
-                } else {
-                    alert('❌ لا يوجد QR Code للجلسة');
-                }
-            } catch (error) {
-                alert('❌ خطأ في الحصول على QR Code');
-            }
-        }
-        
-        // إخفاء QR Code
-        function hideQR() {
-            document.getElementById('sessionQRContainer').style.display = 'none';
-        }
-        
-        // التحميل الأولي
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMultiSessions();
-            setInterval(loadMultiSessions, 15000); // تحديث كل 15 ثانية
-        });
-    </script>
-    `;
-    
-    // إضافة القسم قبل تبويب الإعدادات المتقدمة
     const updatedHtml = html.replace(
         '<!-- الإعدادات المتقدمة -->',
         multiSessionsSection + '\n\n<!-- الإعدادات المتقدمة -->'
@@ -686,62 +1267,12 @@ app.get('/', (req, res) => {
     
     res.send(updatedHtml);
 });
+*/
 
-// ⭐ تكامل النظام الأساسي مع الجلسات المتعددة
-async function initializeAllSystems() {
-    console.log('🚀 بدء جميع أنظمة البوت...');
-    
-    // 1. تحميل النظام الأساسي
-    console.log('📦 تحميل النظام الأساسي...');
-    
-    // 2. تنظيف الجلسات القديمة
-    cleanupOldSessions();
-    
-    // 3. بدء الجلسات المحفوظة تلقائياً
-    autoStartSavedSessions();
-    
-    console.log('✅ جميع الأنظمة جاهزة');
-}
+// ============== تعديل الواجهة الرئيسية لإضافة رابط للصفحة المنفصلة ==============
 
-// تنظيف الجلسات القديمة
-function cleanupOldSessions() {
-    try {
-        const dirs = fs.readdirSync(multiSessionsDir);
-        const now = Date.now();
-        const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
-        
-        dirs.forEach(dir => {
-            const dirPath = path.join(multiSessionsDir, dir);
-            const stats = fs.statSync(dirPath);
-            
-            if (stats.isDirectory() && stats.mtimeMs < weekAgo) {
-                fs.rmSync(dirPath, { recursive: true, force: true });
-                console.log(`🧹 تنظيف جلسة قديمة: ${dir}`);
-            }
-        });
-    } catch (error) {
-        console.log('⚠️ خطأ في تنظيف الجلسات:', error.message);
-    }
-}
-
-// بدء الجلسات المحفوظة تلقائياً
-async function autoStartSavedSessions() {
-    const configs = Array.from(multiSessionManager.sessionConfigs.values());
-    
-    console.log(`🔄 بدء ${configs.length} جلسة محفوظة...`);
-    
-    for (const config of configs.slice(0, 3)) { // أقصى 3 جلسات
-        try {
-            await multiSessionManager.startSession(config);
-            await new Promise(resolve => setTimeout(resolve, 5000)); // انتظار 5 ثواني بين كل جلسة
-        } catch (error) {
-            console.log(`⚠️ لا يمكن بدء جلسة ${config.userName}:`, error.message);
-        }
-    }
-}
-
-
-
+// في الواجهة الرئيسية (app.get('/', ...)) أضف هذا في قسم التبويبات:
+// <div class="tab" onclick="window.open('/multi-sessions', '_blank')">🎪 جلسات متعددة</div>
 
 
 
@@ -3179,6 +3710,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
