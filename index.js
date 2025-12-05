@@ -1274,7 +1274,20 @@ app.get('/', (req, res) => {
 // في الواجهة الرئيسية (app.get('/', ...)) أضف هذا في قسم التبويبات:
 // <div class="tab" onclick="window.open('/multi-sessions', '_blank')">🎪 جلسات متعددة</div>
 
-
+async function initializeAllSystems() {
+    console.log('🚀 بدء جميع أنظمة البوت...');
+    
+    // 1. تحميل النظام الأساسي
+    console.log('📦 تحميل النظام الأساسي...');
+    
+    // 2. تنظيف الجلسات القديمة
+    cleanupOldSessions();
+    
+    // 3. بدء الجلسات المحفوظة تلقائياً
+    autoStartSavedSessions();
+    
+    console.log('✅ جميع الأنظمة جاهزة');
+}
 
 
 
@@ -3710,6 +3723,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
