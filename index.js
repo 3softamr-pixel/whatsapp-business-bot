@@ -4,6 +4,8 @@ const wppconnect = require('@wppconnect-team/wppconnect');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+const app = express();
+
 
 // ⭐⭐⭐ تعريف جميع المسارات أولاً ⭐⭐⭐
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
@@ -3149,6 +3151,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
