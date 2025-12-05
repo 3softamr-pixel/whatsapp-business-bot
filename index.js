@@ -6,8 +6,22 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 const server = http.createServer(app);
+// ⭐ التعديل الأساسي: إضافة استيراد المكتبة
+
+// ⭐ إعادة تكوين puppeteerConfig بشكل كامل
+
+// إعداد Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// مجلدات البيانات
+const dataDir = path.join(__dirname, 'data');
+const sessionsDir = path.join(dataDir, 'sessions');
+const repliesFile = path.join(dataDir, 'replies.json');
+const settingsFile = path.join(dataDir, 'settings.json');
+const problemsFile = path.join(dataDir, 'problems.json');
+// ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
+// ⭐ التعديل المقترح: إضافة executablePath
 // ⭐⭐⭐ تعريف جميع المسارات أولاً ⭐⭐⭐
 const multiSessionsDir = path.join(__dirname, 'multi_sessions');
 function createDirectories() {
@@ -710,24 +724,7 @@ async function autoStartSavedSessions() {
 ////////////////
 
 
-const app = express();
-const server = http.createServer(app);
-// ⭐ التعديل الأساسي: إضافة استيراد المكتبة
 
-// ⭐ إعادة تكوين puppeteerConfig بشكل كامل
-
-// إعداد Express
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// مجلدات البيانات
-const dataDir = path.join(__dirname, 'data');
-const sessionsDir = path.join(dataDir, 'sessions');
-const repliesFile = path.join(dataDir, 'replies.json');
-const settingsFile = path.join(dataDir, 'settings.json');
-const problemsFile = path.join(dataDir, 'problems.json');
-// ⭐ إضافة هنا: إعدادات Puppeteer للاستضافة السحابية
-// ⭐ التعديل المقترح: إضافة executablePath
 
 
 
@@ -3152,6 +3149,7 @@ module.exports = {
     processUserInput,
     initializeAllSystems
 };
+
 
 
 
