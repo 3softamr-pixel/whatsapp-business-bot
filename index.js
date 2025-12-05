@@ -7,19 +7,36 @@ const wppconnect = require('@wppconnect-team/wppconnect');
 const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
+function cleanupChromiumFiles() {
+    try {
+        const tmpDir = '/tmp';
+        if (fs.existsSync(tmpDir)) {
+            const files = fs.readdirSync(tmpDir);
+            files.forEach(file => {
+                if (file.includes('chromium') || file.includes('puppeteer')) {
+                    try {
+                        const filePath = path.join(tmpDir, file);
+                        fs.unlinkSync(filePath);
+                        console.log(`🧹 تم تنظيف: ${filePath}`);
+                    } catch (e) {
+                        // تجاهل الأخطاء
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.log('⚠️ خطأ في تنظيف الملفات:', error.message);
+    }
+}
 
+// استدعاء قبل بدء البوت
+cleanupChromiumFiles();
 const app = express();
 const server = http.createServer(app);
 // ⭐ التعديل الأساسي: إضافة استيراد المكتبة
 
 // ⭐ إعادة تكوين puppeteerConfig بشكل كامل
-const puppeteerConfig = {
-    headless: true,
-    args: chromium.args,
-    executablePath: process.env.CHROMIUM_PATH ||  chromium.executablePath(),
-    ignoreDefaultArgs: ['--disable-extensions'],
-    userDataDir: './user_data'
-};
+
 // إعداد Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -2448,6 +2465,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 النظام المتطور يعمل على http://0.0.0.0:' + PORT);
     initializeBot();
 });
+
 
 
 
